@@ -7,19 +7,22 @@ import re
 from hzRegex import *
 from hzFiles import *
 from hzExcel import *
+from hzMainWindow import *
 
-def main():
-	fileDir = "D:\\test"#D:\\MySrc\\Hz\\Hobe"
-	regexFileName = "*uart*"
-	regex   = "uart"
+dlg = None
 
-	excel = hzExcel("D:\\test\\abc.xls")	
+def main(msgList):
+	fileDir = msgList[0]
+	regexFileName = msgList[3]
+	regex   = msgList[4]
+
+	excel = hzExcel(msgList[1])	
 	excel.getInfo()
 	# excel.writeRow("hello,ok,error,1234",0,1,1);
 	# excel.save()
 
 	hzFilesList = hzFiles(fileDir,debug = True)
-	fileList = hzFilesList.getFilterFilesForTuple(('.c'))
+	fileList = hzFilesList.getFilterFilesForTuple((msgList[2]))
 	#matchs = list(hzFilesList.getFileApproximateMatch(regexFileName))
 	#print ('%d match' % len(matchs))
 	#for match in matchs:
@@ -50,7 +53,15 @@ def main():
 				lineNum.extend(infoLists[0])
 	print ("Check items = %d"%len(lineNum))
 	print ("Total files = %d"%hzFilesList.count)
+	
+	global dlg
+	dlg.signeltableWidgetUpdate([["File EXT.",str(len(lineNum))],["Total Files",str(hzFilesList.count)]])
 	#os.system("pause")
 
 if __name__ == '__main__':
-	main()
+	# main()
+	app = QApplication(sys.argv)
+	dlg = hzMainWindowsDlg()
+	dlg.signelConnectStartBtn(main)
+	dlg.show()
+	sys.exit(app.exec_())	

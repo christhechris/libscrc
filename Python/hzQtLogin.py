@@ -19,8 +19,8 @@ class LoginDlg(QDialog):
         gridLayout.addWidget(self.usrLineEdit, 0, 1, 1, 3);
         gridLayout.addWidget(self.pwdLineEdit, 1, 1, 1, 3);
 
-        okBtn = QPushButton("确定")
-        cancelBtn = QPushButton("取消")
+        okBtn = QPushButton("Enter")
+        cancelBtn = QPushButton("Cancel")
         btnLayout = QHBoxLayout()
 
         btnLayout.setSpacing(60)
@@ -36,7 +36,7 @@ class LoginDlg(QDialog):
         self.setLayout(dlgLayout)
         okBtn.clicked.connect(self.accept)
         cancelBtn.clicked.connect(self.reject)
-        self.setWindowTitle("登录")
+        self.setWindowTitle("Login")
         self.resize(300, 200)
 
     def accept(self):
@@ -44,8 +44,8 @@ class LoginDlg(QDialog):
             super(LoginDlg, self).accept()
         else:
             QMessageBox.warning(self,
-                    "警告",
-                    "用户名或密码错误！",
+                    "Warning",
+                    "User name or Pass World is wrong！",
                     QMessageBox.Yes)
             self.usrLineEdit.setFocus()
 

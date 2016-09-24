@@ -7,8 +7,8 @@ import sys
 class LoginDlg(QDialog):
     def __init__(self, parent=None):
         super(LoginDlg, self).__init__(parent)
-        usr = QLabel("用户：")
-        pwd = QLabel("密码：")
+        usr = QLabel("User：")
+        pwd = QLabel("Pwd ：")
         self.usrLineEdit = QLineEdit()
         self.pwdLineEdit = QLineEdit()
         self.pwdLineEdit.setEchoMode(QLineEdit.Password)

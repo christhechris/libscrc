@@ -26,9 +26,9 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
         self.setupUi(self)
 
         # UI textEdit Init
-        self.fileExt_textEdit.setText(".c | .h")
-        self.fileName_textEdit.setText("*UART*")
-        self.keyWords_textEdit.setText("UART")
+        self.fileExt_lineEdit.setText(".c | .h")
+        self.fileName_lineEdit.setText("*UART*")
+        self.keyWords_lineEdit.setText("UART")
 
         self.folderBrowseBtn.clicked.connect(self.folderBrowse)
         self.exportBrowseBtn.clicked.connect(self.exportBrowse)
@@ -40,7 +40,6 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
         self.tableWidget.horizontalHeader().setStretchLastSection(True) # Last column autosize
 
         # self.tableWidget.setItem(0,0,QTableWidgetItem("Jan1"));
-
         # newRowCount = self.tableWidget.rowCount()
         # self.tableWidget.insertRow(newRowCount)
         # self.tableWidget.setItem(1,0,QTableWidgetItem("Jan2"));
@@ -62,7 +61,7 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
 				2016-09-24 V1.0[Heyn]
         '''
         directory = QFileDialog.getExistingDirectory(self, "Regex Folder", QtCore.QDir.currentPath())
-        self.folder_textEdit.setText(directory)  
+        self.folder_lineEdit.setText(directory)  
 
     def exportBrowse(self) :
         '''
@@ -76,7 +75,7 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
         exportExcel = QFileDialog(self,filter = "*.xls")
         if exportExcel.exec() == QDialog.Accepted :
             # self.export_textEdit.setText(os.path.basename(exportExcel.selectedFiles()[0]))
-            self.export_textEdit.setText(exportExcel.selectedFiles()[0])
+            self.export_lineEdit.setText(exportExcel.selectedFiles()[0])
 
     def setProgressbarRange(self, maxValue) :
         self.progressBar.setRange(0,maxValue)
@@ -86,11 +85,11 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
 
     def startButton(self) :
         msgList = []
-        msgList.append(self.folder_textEdit.toPlainText().strip())
-        msgList.append(self.export_textEdit.toPlainText().strip())
-        msgList.append(self.fileExt_textEdit.toPlainText().strip())
-        msgList.append(self.fileName_textEdit.toPlainText().strip())
-        msgList.append(self.keyWords_textEdit.toPlainText().strip())
+        msgList.append(self.folder_lineEdit.text().strip())
+        msgList.append(self.export_lineEdit.text().strip())
+        msgList.append(self.fileExt_lineEdit.text().strip())
+        msgList.append(self.fileName_lineEdit.text().strip())
+        msgList.append(self.keyWords_lineEdit.text().strip())
         if (msgList[0] == "") or (msgList[1] == "") :
             QMessageBox.warning(self,
                     "Warning",

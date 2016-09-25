@@ -37,6 +37,7 @@ def main(msgList):
 		if regexRule.getRegexFileName("uart", os.path.basename(fileObj)) :
 			#print(fileObj)
 			infoLists = hzFilesList.findStringFromFile(fileObj, regex)
+			# hzFilesList.grepStringFromFile(fileObj, regex)
 			# print (len(infoLists[0]), len(infoLists))
 			for i in range(len(infoLists[0])) :
 				excel.writeRow( "%d"%excelStartRow + "#" + \
@@ -55,7 +56,9 @@ def main(msgList):
 	print ("Total files = %d"%hzFilesList.count)
 	
 	global dlg
-	dlg.signeltableWidgetUpdate([["File EXT.",str(len(lineNum))],["Total Files",str(hzFilesList.count)]])
+	dlg.signeltableWidgetUpdate([["File EXT.",str(len(fileList))],
+								 ["Grep RET.",str(len(lineNum))],
+								 ["Total Files",str(hzFilesList.count)]])
 	#os.system("pause")
 
 if __name__ == '__main__':

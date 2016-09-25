@@ -100,7 +100,7 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
 
     def signeltableWidgetUpdate(self, msgList) :
 
-        for index in range(len(msgList[0])) :
+        for index in range(len(msgList)) :
             newRowCount = self.tableWidget.rowCount()
             self.tableWidget.insertRow(newRowCount)
             self.tableWidget.setItem(newRowCount,0,QTableWidgetItem(msgList[index][0]));

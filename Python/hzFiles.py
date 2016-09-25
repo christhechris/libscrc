@@ -193,3 +193,33 @@ class hzFiles :
 			return infoLists
 		finally :
 			fileObj.close()
+
+
+	def grepStringFromFile(self, filePath, regex) :
+		'''
+		Argument(s): 
+					None
+		Return(s): 
+					
+		Notes:  
+				2016-09-25 V1.0[Heyn]
+		'''
+
+		infoLists = [[] for i in range(3)]	# [[], [], []]
+		lineNum = 0
+		fileObj = open(filePath, 'r', encoding='SJIS', errors = 'ignore')
+		try :
+			for eachLine in fileObj.readlines() :
+				lineNum += 1
+				eachLineStrip = self.__deleteAnotation__(eachLine.strip())
+
+				if eachLineStrip :					
+					if re.search(regex, eachLineStrip, re.I) :
+						if self.debug == True :
+							print ("%5d"%lineNum, end='')
+							print ("%20s      "%self.getFileName(filePath), end='')						
+							print (eachLineStrip)																			
+
+			return infoLists
+		finally :
+			fileObj.close()		

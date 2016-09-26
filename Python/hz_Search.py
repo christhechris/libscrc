@@ -23,15 +23,15 @@ def main(msgList):
 	# excel.writeRow("hello,ok,error,1234",0,1,1);
 	# excel.save()
 
-	hzFilesList = hzFiles(fileFolder,debug = True)
-	fileList = hzFilesList.getFilterFilesEXT(regexFileEXT)
+	hzAllFilesList = hzFiles(fileFolder,debug = False)
+	fileList = hzAllFilesList.getFilterFilesEXT(regexFileEXT)
 
-	matchs = list(hzFilesList.getFileApproximateMatch("*.[c,h]"))
-	print ('%d match' % len(matchs))
+	matchs = list(hzAllFilesList.getFileApproximateMatch("*.[c,h]"))
+	print ('%d Glob match' % len(matchs))
 	# for match in matchs:
 	# 	print (match)
 		
-	print ("*****************************************************************")
+	print ("#"*100)
 	lineNum = []
 	excelStartRow = 1
 
@@ -39,8 +39,8 @@ def main(msgList):
 		regexRule = hzRegex()
 		if regexRule.getRegexFileName(regexFileName, os.path.basename(fileObj)) :
 			#print(fileObj)
-			infoLists = hzFilesList.findStringFromFile(fileObj, regexKeyWords)
-			# hzFilesList.grepStringFromFile(fileObj, regexKeyWords)
+			infoLists = hzAllFilesList.findStringFromFile(fileObj, regexKeyWords)
+			hzAllFilesList.grepStringFromFile(fileObj, regexKeyWords)
 			# print (len(infoLists[0]), len(infoLists))
 			for i in range(len(infoLists[0])) :
 				# excel.writeRow( "%d"%excelStartRow + "#" + \
@@ -56,21 +56,28 @@ def main(msgList):
 			if infoLists :
 				lineNum.extend(infoLists[0])
 	print ("Check items = %d"%len(lineNum))
-	print ("Total files = %d"%hzFilesList.count)
+	print ("Files EXT.  = %d"%len(fileList))
+	print ("Total files = %d"%hzAllFilesList.count)
 	
 	# global dlg
 	# dlg.signeltableWidgetUpdate([["File EXT.",str(len(fileList))],
 	# 							 ["Grep RET.",str(len(lineNum))],
-	# 							 ["Total Files",str(hzFilesList.count)]])
+	# 							 ["Total Files",str(hzAllFilesList.count)]])
 	#os.system("pause")
 
 if __name__ == '__main__':
     	
-	main(["D:\\AIS_INV_CAN\\13_SWC\\02_ソースコード",
-		  "D:\\pythonTools\\abc.xls",
+	# main(["D:\\AIS_INV_CAN\\13_SWC\\02_ソースコード",
+	# 	  "D:\\pythonTools\\abc.xls",
+	# 	  ".c | .h",
+	# 	  "DTC_|CAN_",
+	# 	  "DMCU_1BIT_SIFT"])
+
+	main(["D:\\test",
+		  "D:\\test\\abc.xls",
 		  ".c | .h",
-		  "DTC_|CAN_",
-		  "DMCU_1BIT_SIFT"])
+		  ".",
+		  "UART"])
 
 	# app = QApplication(sys.argv)
 	# dlg = hzMainWindowsDlg()

@@ -59,7 +59,7 @@ class hzFiles :
 					if ext in filterStr.split("|") :
 						filesList.append(os.path.join(root,fileObj))
 		print ("Search valid %s files = %d"%(filterStr,len(filesList)))
-		return filesList						
+		return filesList
 
 	def getFileName(self, filePath) :
 		fileName = os.path.basename(filePath)
@@ -68,7 +68,7 @@ class hzFiles :
 	def getFileApproximateMatch(self, pattern) :
 		''' Approximate Serach files.
 		Argument(s): 
-					pattern (* , ? ,[])
+					pattern (* , ? , [ , ] )
 					e.g. Grep .c and .h files   pattern = "*.[c,h]"
 					e.g. Grep .jpg files 		pattern = "*.jpg"
 		Return(s): 
@@ -115,6 +115,15 @@ class hzFiles :
 				try :
 					while True :
 						functionLine = str(eachLineList[len(eachLineList) - loop]) + strCache
+						# Delete array
+						if re.match(".*?\[.*?\]", functionLine, re.I) :
+							self.braceCnt -= 1
+							break;
+						# Delete special keywords. 
+						if re.match(".*?(struct|enum|union).*?", functionLine, re.I) :
+							self.braceCnt -= 1
+							break;
+
 						if re.match(".*?\(.*?\)", functionLine, re.I) :
 							functionNameEnd = functionLine[ : functionLine.find("(")].strip()
 							functionNameStartIndex = functionNameEnd.rfind(" ")
@@ -204,11 +213,15 @@ class hzFiles :
 
 
 	def grepStringFromFile(self, filePath, regex) :
-		'''
+		'''Grep string from file.
 		Argument(s): 
-					None
+					filePath : file path
+					regex	 : matching rule
 		Return(s): 
-					
+					fileList[[], [], []]
+					[0] filePath
+					[1] line number
+					[2] content
 		Notes:  
 				2016-09-25 V1.0[Heyn]
 		'''
@@ -220,9 +233,11 @@ class hzFiles :
 			for eachLine in fileObj.readlines() :
 				lineNum += 1
 				eachLineStrip = self.__deleteAnotation__(eachLine.strip())
-
-				if eachLineStrip :					
+				if eachLineStrip :
 					if re.search(regex, eachLineStrip, re.I) :
+						infoLists[0].append(filePath)
+						infoLists[1].append(lineNum)
+						infoLists[2].append(eachLineStrip)
 						if self.debug == True :
 							print ("%5d"%lineNum, end='')
 							print ("%20s      "%self.getFileName(filePath), end='')						

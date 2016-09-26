@@ -22,6 +22,7 @@ class hzFiles :
 		self.count = 0
 		self.braceCnt = 0
 		self.lineAsterisk = 0
+
 	def getFilesListInCurrentFolder(self) :
 		''' Find files in current folder.
 		Argument(s): 
@@ -37,23 +38,27 @@ class hzFiles :
 				filesList.append(os.path.join(root,fileObj))
 		return filesList
 
-	def getFilterFilesForTuple(self, filterTuple) :
+	def getFilterFilesEXT(self, filterStr) :
 		''' Filter file's extension.
 		Argument(s): 
-					filterTuple [filter key words]
+					filterStr [filter key words]
+					e.g. (".c|.h")
 		Return(s): 
-
+					Grep result fileslist
 		Notes: 
 				2016-09-14 V1.0[Heyn]
+				2016-09-26 V1.1[Heyn]	Delete space(" ") in filterStr
 		'''
 		filesList = []
+		filterStr = "".join([x for x in filterStr if x != " "])	#Delete space(" ") in filterStr 
+
 		for root, dirs, files in os.walk(self.dirPath) :
 			for fileObj in files :
 				if os.path.isfile(os.path.join(root, fileObj)) :
 					ext = os.path.splitext(fileObj)[1].lower()
-					if ext in filterTuple :
+					if ext in filterStr.split("|") :
 						filesList.append(os.path.join(root,fileObj))
-		print ("Search valid %s files = %d"%(filterTuple,len(filesList)))
+		print ("Search valid %s files = %d"%(filterStr,len(filesList)))
 		return filesList						
 
 	def getFileName(self, filePath) :
@@ -63,11 +68,14 @@ class hzFiles :
 	def getFileApproximateMatch(self, pattern) :
 		''' Approximate Serach files.
 		Argument(s): 
-					None
+					pattern (* , ? ,[])
+					e.g. Grep .c and .h files   pattern = "*.[c,h]"
+					e.g. Grep .jpg files 		pattern = "*.jpg"
 		Return(s): 
 					
 		Notes:  (Used Module) from glob import glob
 				2016-09-15 V1.0[Heyn]
+				2016-09-26 V1.0[Heyn] Add anotation.
 		'''
 		for root, dirs, files in os.walk(self.dirPath) :
 			for match in glob(os.path.join(root, pattern)) :

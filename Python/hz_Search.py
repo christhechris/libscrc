@@ -12,21 +12,24 @@ from hzMainWindow import *
 dlg = None
 
 def main(msgList):
-	fileDir = msgList[0]
+	fileFolder = msgList[0]
+	excelExport = msgList[1]
+	regexFileEXT = msgList[2]
 	regexFileName = msgList[3]
-	regex   = msgList[4]
+	regexKeyWords = msgList[4]
 
-	excel = hzExcel(msgList[1])	
+	excel = hzExcel(excelExport)
 	excel.getInfo()
 	# excel.writeRow("hello,ok,error,1234",0,1,1);
 	# excel.save()
 
-	hzFilesList = hzFiles(fileDir,debug = True)
-	fileList = hzFilesList.getFilterFilesForTuple((msgList[2]))
-	#matchs = list(hzFilesList.getFileApproximateMatch(regexFileName))
-	#print ('%d match' % len(matchs))
-	#for match in matchs:
-	#	print (match)
+	hzFilesList = hzFiles(fileFolder,debug = True)
+	fileList = hzFilesList.getFilterFilesEXT(regexFileEXT)
+
+	matchs = list(hzFilesList.getFileApproximateMatch("*.[c,h]"))
+	print ('%d match' % len(matchs))
+	# for match in matchs:
+	# 	print (match)
 		
 	print ("*****************************************************************")
 	lineNum = []
@@ -34,19 +37,19 @@ def main(msgList):
 
 	for fileObj in fileList:
 		regexRule = hzRegex()
-		if regexRule.getRegexFileName("uart", os.path.basename(fileObj)) :
+		if regexRule.getRegexFileName(regexFileName, os.path.basename(fileObj)) :
 			#print(fileObj)
-			infoLists = hzFilesList.findStringFromFile(fileObj, regex)
-			# hzFilesList.grepStringFromFile(fileObj, regex)
+			infoLists = hzFilesList.findStringFromFile(fileObj, regexKeyWords)
+			# hzFilesList.grepStringFromFile(fileObj, regexKeyWords)
 			# print (len(infoLists[0]), len(infoLists))
 			for i in range(len(infoLists[0])) :
-				excel.writeRow( "%d"%excelStartRow + "#" + \
-								os.path.basename(fileObj) + "#" + \
-								str(infoLists[0][i]) + "#" + \
-								"OK"+ "#" + \
-								str(infoLists[1][i]) + "#" + \
-								str(infoLists[2][i]) \
-								,0,excelStartRow,1);
+				# excel.writeRow( "%d"%excelStartRow + "#" + \
+				# 				os.path.basename(fileObj) + "#" + \
+				# 				str(infoLists[0][i]) + "#" + \
+				# 				"OK"+ "#" + \
+				# 				str(infoLists[1][i]) + "#" + \
+				# 				str(infoLists[2][i]) \
+				# 				,0,excelStartRow,1);
 				excelStartRow += 1			
 			excel.save()
 
@@ -55,16 +58,22 @@ def main(msgList):
 	print ("Check items = %d"%len(lineNum))
 	print ("Total files = %d"%hzFilesList.count)
 	
-	global dlg
-	dlg.signeltableWidgetUpdate([["File EXT.",str(len(fileList))],
-								 ["Grep RET.",str(len(lineNum))],
-								 ["Total Files",str(hzFilesList.count)]])
+	# global dlg
+	# dlg.signeltableWidgetUpdate([["File EXT.",str(len(fileList))],
+	# 							 ["Grep RET.",str(len(lineNum))],
+	# 							 ["Total Files",str(hzFilesList.count)]])
 	#os.system("pause")
 
 if __name__ == '__main__':
-	# main()
-	app = QApplication(sys.argv)
-	dlg = hzMainWindowsDlg()
-	dlg.signelConnectStartBtn(main)
-	dlg.show()
-	sys.exit(app.exec_())	
+    	
+	main(["D:\\AIS_INV_CAN\\13_SWC\\02_ソースコード",
+		  "D:\\pythonTools\\abc.xls",
+		  ".c | .h",
+		  "DTC_|CAN_",
+		  "DMCU_1BIT_SIFT"])
+
+	# app = QApplication(sys.argv)
+	# dlg = hzMainWindowsDlg()
+	# dlg.signelConnectStartBtn(main)
+	# dlg.show()
+	# sys.exit(app.exec_())	

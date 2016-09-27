@@ -50,7 +50,7 @@ class hzFiles :
 				2016-09-26 V1.1[Heyn]	Delete space(" ") in filterStr
 		'''
 		filesList = []
-		filterStr = "".join([x for x in filterStr if x != " "])	#Delete space(" ") in filterStr 
+		filterStr = "".join([x for x in filterStr if x != " "])	# Delete space(" ") in filterStr
 
 		for root, dirs, files in os.walk(self.dirPath) :
 			for fileObj in files :
@@ -172,7 +172,8 @@ class hzFiles :
 		Return(s): 
 					
 		Notes:  
-				2016-09-17 V1.0[Heyn]
+				2016-09-17 V1.0.0[Heyn]
+				2016-09-17 V1.0.1[Heyn] Delete (;) in eachLineStrip
 		'''
 		functionName = ''
 		infoLists = [[] for i in range(3)]	# [[], [], []]
@@ -196,7 +197,7 @@ class hzFiles :
 						if self.braceCnt != 0 :
 							infoLists[0].append(functionName)
 							infoLists[1].append(lineNum)
-							infoLists[2].append(eachLineStrip)
+							infoLists[2].append("".join([x for x in eachLineStrip if x != ";"]))	# Delete (;) in eachLineStrip
 						
 						if self.debug == True :
 							print ("%5d"%lineNum, end='')
@@ -238,7 +239,7 @@ class hzFiles :
 						infoLists[0].append(filePath)
 						infoLists[1].append(lineNum)
 						infoLists[2].append(eachLineStrip)
-						if self.debug == True :
+						if self.debug == False :
 							print ("%5d"%lineNum, end='')
 							print ("%20s      "%self.getFileName(filePath), end='')						
 							print (eachLineStrip)																			

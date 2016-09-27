@@ -104,7 +104,7 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow) :
             newRowCount = self.tableWidget.rowCount()
             self.tableWidget.insertRow(newRowCount)
             self.tableWidget.setItem(newRowCount,0,QTableWidgetItem(msgList[index][0]));
-            self.tableWidget.setItem(newRowCount,1,QTableWidgetItem(msgList[index][1]));       
+            self.tableWidget.setItem(newRowCount,1,QTableWidgetItem(msgList[index][1]));
         pass
 
     def signelConnectStartBtn(self, handlerProc) :

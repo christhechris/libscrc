@@ -65,17 +65,26 @@ class hzExcel :
 		Argument(s): 
 					None
 		Return(s): 
-					None
+					xlsInfoLists ->	[0] sheet name
+									[1] rows number
+									[2] coln number
 		Notes: 
-				2016-09-18 V1.0[Heyn]
-		'''    		
+				2016-09-18 V1.0.0[Heyn]
+				2016-09-27 V1.0.1[Heyn]		Add return
+		'''
+		xlsInfoLists = [[] for i in range(3)]	# [[], [], []]
+
 		if self.isOpened == True :
 			for sheetname in self.__excelObj.sheet_names() :
 				worksheet = self.__excelObj.sheet_by_name(sheetname)
+				xlsInfoLists[0].append(sheetname)
+				xlsInfoLists[1].append(worksheet.nrows)
+				xlsInfoLists[2].append(worksheet.ncols)
 				print('%s:(%d row,%d col).'%(sheetname,worksheet.nrows,worksheet.ncols))
 		else :
 			print ("File %s is not opened"%self.filePath)
-	
+		return xlsInfoLists
+
 	def readCell(self, sheetName = "sheet1", rown = 0, coln = 0) :
 		''' Read file's a cell content.
 		Argument(s): 
@@ -108,6 +117,7 @@ class hzExcel :
 		Notes: 
 				2016-09-18 V1.0[Heyn]
 		'''
+		row = None
 		try :
 			if self.isOpened == True :
 				worksheets = self.__excelObj.sheet_names()
@@ -116,12 +126,13 @@ class hzExcel :
 					return False
 				worksheet = self.__excelObj.sheet_by_name(sheetName)
 				row = worksheet.row_values(rown)
-				print('[sheet:%s,row:%s]:%s.'%(sheetName,rown,row))
+				# print('[sheet:%s,row:%s]:%s.'%(sheetName,rown,row))
 			else :
 				print ("File %s is not opened"%self.filePath)
 		except :
 			print ("Read row is fail.")	
-	
+		return row
+
 	def readCol(self, sheetName = "sheet1", coln = 0) :
 		''' Read file's a col content.
 		Argument(s): 
@@ -149,19 +160,21 @@ class hzExcel :
 	def writeCell(self, value = '', sheetn = 0, rown = 0, coln = 0) :
 		''' Write a cell to file,other cell is not change.
 		Argument(s): 
-					None
+					[vale, sheetn, rown, coln]
 		Return(s): 
 					None
 		Notes:  (Used Module) from xlutils.copy import copy
-				2016-09-18 V1.0[Heyn]
+				2016-09-18 V1.0.0[Heyn]
+				2016-09-27 V1.0.1[Heyn] Removed object copy and save
 		'''
 		try :
 			if self.isOpened == True :
-				xlrd_objectc = copy(self.__excelObj)
-				worksheet = xlrd_objectc.get_sheet(sheetn)
-				worksheet.write(rown,coln,value)
-				xlrd_objectc.save(self.filePath)
-				print('writerow value:%s to [sheet:%s,row:%s,col:%s] is ture.'%(value,sheetn,rown,coln))
+				# xlrd_objectc = copy(self.__excelObj)
+				# worksheet = xlrd_objectc.get_sheet(sheetn)
+				worksheet = self.__excelObjCopy.get_sheet(sheetn)
+				worksheet.write(rown,coln,value,self.settingMerged())
+				# xlrd_objectc.save(self.filePath)
+				# print('writerow value:%s to [sheet:%s,row:%s,col:%s] is ture.'%(value,sheetn,rown,coln))
 			else :
 				print ("File %s is not opened"%self.filePath)
 		except :
@@ -193,14 +206,22 @@ class hzExcel :
 		except :
 			print ("Write excel row fail.")
 			
-	def save(self) :
+	def saveWorkBook(self) :
+		'''Save excel workbook.
+		Argument(s):
+					None
+		Return(s):
+					None
+		Notes:
+				2016-09-27 V1.0.0[Heyn]
+		'''
 		self.__excelObjCopy.save(self.filePath)
 
 	def writeCol(self, values = '', sheetn = 0, rown = 0, coln = 0) :
 		''' Write a col to file, other col and cell is not change.
-		Argument(s): 
+		Argument(s):
 					None
-		Return(s): 
+		Return(s):
 					None
 		Notes:  (Used Module) from xlutils.copy import copy
 				2016-09-18 V1.0[Heyn]

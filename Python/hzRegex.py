@@ -21,7 +21,7 @@ class hzRegex :
 		'''
 		ret = re.search('([^:]//.*?$)|(/\*(.*?)\*/)|(\*(.*?)\*)', str, re.I)
 		return ret
-	
+
 	def regexDeleAnotation(self, str) :
 		''' Regular delete anotation.
 		excluding : ://
@@ -35,7 +35,7 @@ class hzRegex :
 		if self.debug :
 			print (strMsg)
 		return strMsg
-    			
+
 	def getRegexFileName(self, matchStr, str) :
 		'''
 

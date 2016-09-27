@@ -42,13 +42,3 @@ class hzRegex :
 		'''
 		ret = re.search("^[A-Za-z0-9_]*" + matchStr, str, re.I)
 		return ret
-	
-	def getFunctionName(self,str) :
-		'''
-
-		'''
-		#strFunction = re.match("^[(static void)|(void)]?\w[^(if)|(for)|(else if)|(while)|(=)].*?\(.*?\)$", eachLineStrip, re.I)
-		#strFunction = re.match("^\w.*?\w[^(if)|(for)|(else if)|(while)|(switch)].*?\(.*?\)$", eachLineStrip, re.I)
-		reString = "^((void)|(static)|(UINT8)).*?\(.*?\)$"
-		ret = re.match("reString", str, re.I)
-		return ret

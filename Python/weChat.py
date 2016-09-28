@@ -11,10 +11,10 @@ import re
 import sys
 import time
 import json
+import random
 import urllib
 import urllib.request
 import urllib.parse
-import cookies
 import xml.dom.minidom
 
 DEBUG = True
@@ -29,7 +29,7 @@ skey = ''
 wxsid = ''  
 wxuin = ''  
 pass_ticket = ''  
-deviceId = 'e000000000000000'  
+deviceId = 'e' + repr(random.random())[2:17]  
 BaseRequest = {}
 ContactList = []
 My = []
@@ -45,22 +45,31 @@ def getUUID() :
 		'lang':'zh_CN',
 		'_':int(time.time())
 	}
-	request = urllib.request.Request(url=url,data=urllib.parse.urlencode(values).encode(encoding='UTF8'))
+	request = urllib.request.Request(url = url, data=urllib.parse.urlencode(values).encode(encoding='UTF8'))
 	response = urllib.request.urlopen(request)
 	data = response.read().decode("UTF8")
+
+	# return message : window.QRLogin.code = 200; window.QRLogin.uuid = "Qa59OV8VIQ==";
 	print (data)
 
 	regx = 'window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)"'
 	pm = re.search(regx,data)
 	code = pm.group(1)
 	uuid = pm.group(2)
-	print (code, uuid)
-		
+	# print (code, uuid)
 	if code == '200' :
 		return True
 	return False
 
-def show2DimensionCode():
+def show2DimensionCode() :
+	''' Get the two-dimensional code and pass in the UUID
+	Argument(s):
+				None
+	Return(s):
+				None
+	Notes:
+				2016-09-28 V1.0.1[Heyn]
+	'''
 	global tip
 
 	url = 'https://login.weixin.qq.com/qrcode/' + uuid
@@ -72,19 +81,32 @@ def show2DimensionCode():
 	request = urllib.request.Request(url=url,data=urllib.parse.urlencode(values).encode(encoding='UTF8'))
 	response = urllib.request.urlopen(request)
 	tip = 1
-	f = open(imagesPath,'wb')
-	f.write(response.read())
-	f.close()
+	imageQR = open(imagesPath,'wb')
+	imageQR.write(response.read())
+	imageQR.close()
 	time.sleep(1)
-	os.system('call %s' %imagesPath)
+	os.system('call %s' %imagesPath)	# Open QRCode image.
 
-def isLoginSucess():
+def isLoginSucess() :
+	'''
+	Argument(s):
+				None
+	Return(s):
+				None
+	Notes:
+				2016-09-28 V1.0.1[Heyn]
+	'''	
 	global tip, base_uri, redirect_uri
+	# tip = 1 return windows.code = 408
+	# The QRLogin code has expired, re-obtain QR code
 	url = 'https://login.wx.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s'%(tip,uuid,int(time.time()))
 	request = urllib.request.Request(url = url)
 	response = urllib.request.urlopen(request)
 	data = response.read().decode()
 	print (data)
+	# window.code=200;
+	# window.redirect_uri="https://wx.qq.com/cgi-bin/mmwebwx-bin/webwxnewloginpage?ticket=Aan5j5I9GwWh2JHG-6ImE7KL@qrticket_0&uuid=YdTNs6M0J
+	# A==&lang=zh_CN&scan=1475065106";
 
 	regx = 'window.code=(\d+)'
 	pm = re.search(regx,data)
@@ -99,11 +121,19 @@ def isLoginSucess():
 		redirect_uri = pm.group(1) + '&fun=new'
 		base_uri = redirect_uri[:redirect_uri.rfind('/')]
 	elif code == '408' :
-		print('Login Timeout!')
+		print('Login timeout!')
 
 	return code
 
 def login() :
+	'''
+	Argument(s):
+				None
+	Return(s):
+				None
+	Notes:
+				2016-09-28 V1.0.1[Heyn]
+	'''	
 	global skey, wxsid, wxuin, pass_ticket, BaseRequest
 	request = urllib.request.Request(url = redirect_uri)
 	response = urllib.request.urlopen(request)
@@ -123,7 +153,7 @@ def login() :
 	# print ('skey: %s, wxsid: %s, wxuin: %s, pass_ticket: %s' % (skey, wxsid, wxuin, pass_ticket))
 
 	if skey == '' or wxsid == '' or wxuin == '' or pass_ticket == '' :
-		return False  
+		return False
 
 	BaseRequest = {
 		'Uin': int(wxuin),
@@ -136,6 +166,14 @@ def login() :
 
 
 def webwxinit() :
+	'''
+	Argument(s):
+				None
+	Return(s):
+				None
+	Notes:
+				2016-09-28 V1.0.1[Heyn]
+	'''	
 	url = base_uri + '/webwxinit?pass_ticket=%s&skey=%s&r=%s' % (pass_ticket, skey, int(time.time()))
 	params = {
 		'BaseRequest': BaseRequest
@@ -157,7 +195,7 @@ def webwxinit() :
 	My = dic['User']
 
 	ErrMsg = dic['BaseResponse']['ErrMsg']
-	if len(ErrMsg) > 0:
+	if len(ErrMsg) > 0 :
 		print (ErrMsg)
 
 	Ret = dic['BaseResponse']['Ret']
@@ -166,13 +204,19 @@ def webwxinit() :
 	return True
 
 def webwxgetcontact():
-    
+	'''
+	Argument(s):
+				None
+	Return(s):
+				None
+	Notes:
+				2016-09-28 V1.0.1[Heyn]
+	'''    
 	url = base_uri + '/webwxgetcontact?pass_ticket=%s&skey=%s&r=%s' % (pass_ticket, skey, int(time.time()))
 	params = {
 		'BaseRequest': BaseRequest
 	}
-	request = urllib.request.Request(url = url, data = json.dumps(params).encode(encoding='UTF8'))	
-	# request = urllib.request.Request(url = url)
+	request = urllib.request.Request(url = url, data = json.dumps(params).encode(encoding='UTF8'))
 	request.add_header('ContentType', 'application/json; charset=UTF-8')
 	response = urllib.request.urlopen(request)
 	data = response.read().decode()

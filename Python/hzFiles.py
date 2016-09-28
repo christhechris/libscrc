@@ -154,9 +154,9 @@ class hzFiles :
 				2016-09-20 V1.0[Heyn]
 		'''
 		eachLineStrip = re.sub('([^:]?//.*?$)|(/\*(.*?)\*/)', '',eachLine).strip()
-		if re.match('^/\*',eachLineStrip) and self.lineAsterisk == 0 :
+		if re.match('.*?/\*',eachLineStrip) and self.lineAsterisk == 0 :
 			self.lineAsterisk = 1
-			eachLineStrip = re.sub('^/\*.*?$', '' ,eachLineStrip).strip()
+			eachLineStrip = re.sub('/\*.*?$', '' ,eachLineStrip).strip()
 		if re.match('.*?\*/$',eachLineStrip) and self.lineAsterisk == 1 :
 			self.lineAsterisk = 0
 			eachLineStrip = re.sub('^.*?\*/$', '' ,eachLineStrip).strip()
@@ -173,7 +173,7 @@ class hzFiles :
 					
 		Notes:  
 				2016-09-17 V1.0.0[Heyn]
-				2016-09-17 V1.0.1[Heyn] Delete (;) in eachLineStrip
+				2016-09-17 V1.0.1[Heyn] Delete (space) in eachLineStrip
 		'''
 		functionName = ''
 		infoLists = [[] for i in range(3)]	# [[], [], []]
@@ -189,7 +189,7 @@ class hzFiles :
 				functionName = self.__getFunctionName__(fileList, eachLineStrip, functionName)
 
 				if eachLineStrip :					
-					if re.search(regex, eachLineStrip, re.I) :
+					if re.search(regex, eachLineStrip) :
 						# <bug: 1609202120> self.braceCnt != 0
 						# When the function does not match the condition
 						# The next function name match the condition
@@ -197,7 +197,7 @@ class hzFiles :
 						if self.braceCnt != 0 :
 							infoLists[0].append(functionName)
 							infoLists[1].append(lineNum)
-							infoLists[2].append("".join([x for x in eachLineStrip if x != ";"]))	# Delete (;) in eachLineStrip
+							infoLists[2].append("".join([x for x in eachLineStrip if x != " "]))	# Delete space in eachLineStrip
 						
 						if self.debug == True :
 							print ("%5d"%lineNum, end='')

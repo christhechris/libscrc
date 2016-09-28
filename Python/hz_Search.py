@@ -43,13 +43,13 @@ def main(msgList):
 			# print (len(infoLists[0]), len(infoLists))
 			for i in range(len(infoLists[0])) :
 				# strMessage [excelFileName, functionName, keywordsLines, keywords]
-				excel.writeExcelRow(os.path.basename(fileObj) + "#" + \
-									str(infoLists[0][i]) + "#" + str(infoLists[1][i]) + "#" + \
-									str(infoLists[2][i]),excelStartRow)
-
-				# ret = excel.updateExcelRow(os.path.basename(fileObj) + "#" + \
+				# excel.writeExcelRow(os.path.basename(fileObj) + "#" + \
 				# 					str(infoLists[0][i]) + "#" + str(infoLists[1][i]) + "#" + \
-				# 					str(infoLists[2][i]), excelStartRow)
+				# 					str(infoLists[2][i]),excelStartRow)
+
+				ret = excel.updateExcelRow(os.path.basename(fileObj) + "#" + \
+									str(infoLists[0][i]) + "#" + str(infoLists[1][i]) + "#" + \
+									str(infoLists[2][i]), excelStartRow)
 
 				if (ret == True) :
 					excelStartRow += 1
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 		  "D:\\pythonTools\\abc.xls",
 		  ".c",
 		  "DGT_|CAN_",
-		  "while"])
+		  "for"])
 
 	# main(["D:\\test",
 	# 	  "D:\\test\\abc.xls",

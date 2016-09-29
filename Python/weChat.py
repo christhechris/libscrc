@@ -15,6 +15,8 @@ import random
 import urllib
 import urllib.request
 import urllib.parse
+# pip install requests 2016-09-29
+import requests
 import xml.dom.minidom
 import multiprocessing
 import platform
@@ -94,7 +96,7 @@ class WebWeixin(object):
         self.GroupMemeberList = []  # 群友
         self.PublicUsersList = []  # 公众号／服务号
         self.SpecialUsersList = []  # 特殊账号
-        self.autoReplyMode = False
+        self.autoReplyMode = True
         self.syncHost = ''
         self.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36'
         self.interactive = False
@@ -251,7 +253,10 @@ class WebWeixin(object):
         print (self.base_uri)
         url = self.base_uri + '/webwxgetcontact?pass_ticket=%s&skey=%s&r=%s' % (
             self.pass_ticket, self.skey, int(time.time()))
-        dic = self._post(url, {})
+        params = {
+            'BaseRequest': self.BaseRequest
+        }
+        dic = self._post(url, params)
 
         self.MemberCount = dic['MemberCount']
         self.MemberList = dic['MemberList']
@@ -260,7 +265,7 @@ class WebWeixin(object):
         PublicUsersList = self.PublicUsersList[:]
         SpecialUsersList = self.SpecialUsersList[:]
 
-        for i in xrange(len(ContactList) - 1, -1, -1):
+        for i in range(len(ContactList) - 1, -1, -1):
             Contact = ContactList[i]
             if Contact['VerifyFlag'] & 8 != 0:  # 公众号/服务号
                 ContactList.remove(Contact)
@@ -293,7 +298,7 @@ class WebWeixin(object):
         ContactCount = dic['Count']
         self.GroupList = ContactList
 
-        for i in xrange(len(ContactList) - 1, -1, -1):
+        for i in range(len(ContactList) - 1, -1, -1):
             Contact = ContactList[i]
             MemberList = Contact['MemberList']
             for member in MemberList:
@@ -342,7 +347,7 @@ class WebWeixin(object):
             '_': int(time.time()),
         }
         url = 'https://' + self.syncHost + \
-            '/cgi-bin/mmwebwx-bin/synccheck?' + urllib.urlencode(params)
+            '/cgi-bin/mmwebwx-bin/synccheck?' + urllib.parse.urlencode(params)
         data = self._get(url)
         pm = re.search(
             r'window.synccheck={retcode:"(\d+)",selector:"(\d+)"}', data)
@@ -379,7 +384,7 @@ class WebWeixin(object):
             'BaseRequest': self.BaseRequest,
             'Msg': {
                 "Type": 1,
-                "Content": self._transcoding(word),
+                "Content": word,
                 "FromUserName": self.User['UserName'],
                 "ToUserName": to,
                 "LocalID": clientMsgId,
@@ -709,7 +714,8 @@ class WebWeixin(object):
                 raw_msg = {'raw_msg': msg}
                 self._showMsg(raw_msg)
                 if self.autoReplyMode:
-                    ans = self._xiaodoubi(content) + '\n[微信机器人自动回复]'
+                    # ans = self._xiaodoubi(content) + '\n[I Love you]'
+                    ans = '\n[OK]'
                     if self.webwxsendmsg(ans, msg['FromUserName']):
                         print ('自动回复: ' + ans)
                         logging.info('自动回复: ' + ans)
@@ -909,7 +915,7 @@ class WebWeixin(object):
             print (self)
         logging.debug(self)
 
-        if self.interactive and raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
+        if self.interactive and input('[*] 是否开启自动回复模式(y/n): ') == 'y':
             self.autoReplyMode = True
             print ('[*] 自动回复模式 ... 开启')
             logging.debug('[*] 自动回复模式 ... 开启')
@@ -921,7 +927,7 @@ class WebWeixin(object):
         listenProcess.start()
 
         while True:
-            text = raw_input('')
+            text = input('')
             if text == 'quit':
                 listenProcess.terminate()
                 print('[*] 退出微信')
@@ -1017,7 +1023,7 @@ class WebWeixin(object):
         response = urllib.request.urlopen(request)
         data = response.read().decode()
         if jsonfmt:
-            return json.loads(data, object_hook=_decode_dict)
+            return json.loads(data) #json.loads(data, object_hook=_decode_dict)
         return data
 
     def _xiaodoubi(self, word):
@@ -1071,7 +1077,7 @@ class UnicodeStreamFilter:
     def flush(self):
         self.target.flush()
 
-if sys.stdout.encoding == 'cp936':
+if sys.stdout.encoding == 'cp932':
     sys.stdout = UnicodeStreamFilter(sys.stdout)
 
 

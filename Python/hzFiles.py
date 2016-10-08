@@ -8,9 +8,11 @@
 #           2016/10/07 PEP 8 Code Style
 
 import sys
+import re
 import os
 import os.path
-import re
+import logging
+
 
 from glob import glob
 
@@ -24,6 +26,117 @@ class hzFiles:
         self.count = 0
         self.braceCnt = 0
         self.lineAsterisk = 0
+        logging.basicConfig(filename='logging.log',
+                            level = logging.DEBUG)
+    def findAllFilesInFolder(self):
+        ''' Find all files in current folder.
+        Argument(s):
+                    None
+        Return(s):
+                    filesList
+        Notes:
+                    2016-10-08 V1.0[Heyn]
+        '''
+        filesList = []
+        for root, dirs, files in os.walk(self.dirPath):
+            for fileObj in files:
+                filesList.append(os.path.join(root, fileObj))
+        return filesList
+
+    def findRuleFilesInFolder(self, pattern = "*.*"):
+        ''' Find all files in current folder by pattern.
+        Argument(s):
+                    pattern (* , ? , [ , ] )
+                    e.g. Grep .c and .h files   pattern = "*.[c,h]"
+                    e.g. Grep .jpg files        pattern = "*.jpg"
+        Return(s):
+                    filesList
+        Notes:
+                    (Used Module) from glob import glob
+                    2016-10-08 V1.0[Heyn]
+        '''
+        filesList = []
+        for root, dirs, files in os.walk(self.dirPath):
+            for match in glob(os.path.join(root, pattern)):
+                filesList.append(match)
+        return filesList
+
+    def findStringInFile(self, filePath, pattern = "[\s\S]*"):
+        ''' .
+        Argument(s):
+                    filePath : file path
+                    pattern([\s\S]*) : Search any characters
+        Return(s):
+                    contentDict = {lineNumber：eachLine， key2：value2， …}
+        Notes:
+                    2016-10-08 V1.0[Heyn]
+        '''
+        contentDict = {}
+        fileObj = open(filePath, 'r', encoding='SJIS', errors='ignore')
+        try:
+            for lineNumber, eachLine in enumerate(fileObj):
+                if re.search(pattern, eachLine, re.I):
+                    contentDict[lineNumber] = eachLine
+            print ((lambda dict : [item for item in dict.items()])(contentDict))
+        finally:
+            fileObj.close()
+        return contentDict
+
+    def findStringInDict(self, fileContentDict, pattern = "[\s\S]*"):
+        ''' .
+        Argument(s):
+                    fileContentDict  : File Content Dict
+                    pattern([\s\S]*) : Search any characters
+        Return(s):
+                    contentDict = {lineNumber：eachLine， key2：value2， …}
+        Notes:
+                    2016-10-08 V1.0[Heyn]
+        '''
+        contentDict = {}
+        for key, value in fileContentDict.items():
+            if re.search(pattern, value, re.I):
+                contentDict[key] = value
+        print ((lambda dict : [item for item in dict.items()])(contentDict))
+        return contentDict
+
+    def deleteAnotationInFile(self, filePath):
+        ''' .
+        Argument(s):
+                    filePath : file path
+        Return(s):
+                    contentDict = {lineNumber：eachLine， key2：value2， …}
+        Notes:
+                    2016-10-08 V1.0[Heyn] hz.deleteAnotationInFile("D:\pythonTools\Python\Python\Python\CAN_boot_com_bg.c")
+        '''
+        contentDict = {}
+        multiLineNote = False
+        fileObj = open(filePath, 'r', encoding='SJIS', errors='ignore')
+        try:
+            for lineNumber, eachLine in enumerate(fileObj):
+                eachLineRegex = re.sub(
+                    '([^:]?//.*?$)|(/\*(.*?)\*/)', '', eachLine).strip()
+                if (multiLineNote is False) and (
+                    re.match('.*?/\*', eachLineRegex)):
+                    multiLineNote = True
+                    eachLineRegex = re.sub('/\*.*?$', '', eachLineRegex).strip()
+                    # Methods for handling the following annotations
+                    # for (i=0; i<100; i++)     /* loop 100 times
+                    #                              It's test code */
+                    # Add below code.
+                    if eachLineRegex != '':
+                        contentDict[lineNumber] = eachLineRegex
+                if (multiLineNote is True) and (
+                    re.match('.*?\*/$', eachLineRegex)):
+                    multiLineNote = False
+                    eachLineRegex = re.sub('^.*?\*/$', '', eachLineRegex).strip()
+                if multiLineNote is True:
+                    continue
+                if eachLineRegex != '':
+                    contentDict[lineNumber] = eachLineRegex
+        finally:
+            fileObj.close()
+        logging.debug(contentDict)
+        return sorted(contentDict.items(), key=lambda d: d[1])
 
     def getFilesListInCurrentFolder(self):
         ''' Find files in current folder.
@@ -107,7 +220,6 @@ class hzFiles:
         Notes:
                     2016-09-20 V1.0[Heyn]
         '''
-
         if re.match(".*?{.*?", eachLineStrip, re.I):
             strCache = ""
             loop = 2

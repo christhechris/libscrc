@@ -26,8 +26,13 @@ class hzFiles:
         self.count = 0
         self.braceCnt = 0
         self.lineAsterisk = 0
-        logging.basicConfig(filename='logging.log',
-                            level = logging.DEBUG)
+
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S',
+                            filename='logging.log',
+                            filemode='w')
+
     def findAllFilesInFolder(self):
         ''' Find all files in current folder.
         Argument(s):
@@ -43,7 +48,7 @@ class hzFiles:
                 filesList.append(os.path.join(root, fileObj))
         return filesList
 
-    def findRuleFilesInFolder(self, pattern = "*.*"):
+    def findRuleFilesInFolder(self, pattern="*.*"):
         ''' Find all files in current folder by pattern.
         Argument(s):
                     pattern (* , ? , [ , ] )
@@ -61,7 +66,7 @@ class hzFiles:
                 filesList.append(match)
         return filesList
 
-    def findStringInFile(self, filePath, pattern = "[\s\S]*"):
+    def findStringInFile(self, filePath, pattern="[\s\S]*"):
         ''' .
         Argument(s):
                     filePath : file path
@@ -77,18 +82,18 @@ class hzFiles:
             for lineNumber, eachLine in enumerate(fileObj):
                 if re.search(pattern, eachLine, re.I):
                     contentDict[lineNumber] = eachLine
-            print ((lambda dict : [item for item in dict.items()])(contentDict))
+            print((lambda dict: [item for item in dict.items()])(contentDict))
         finally:
             fileObj.close()
         return contentDict
 
-    def findStringInDict(self, fileContentDict, pattern = "[\s\S]*"):
+    def findStringInDict(self, fileContentDict, pattern="[\s\S]*"):
         ''' .
         Argument(s):
                     fileContentDict  : File Content Dict
                     pattern([\s\S]*) : Search any characters
         Return(s):
-                    contentDict = {lineNumber：eachLine， key2：value2， …}
+                    contentDict = {lineNumber:eachLine, key:value, ...}
         Notes:
                     2016-10-08 V1.0[Heyn]
         '''
@@ -96,7 +101,7 @@ class hzFiles:
         for key, value in fileContentDict.items():
             if re.search(pattern, value, re.I):
                 contentDict[key] = value
-        print ((lambda dict : [item for item in dict.items()])(contentDict))
+        print((lambda dict: [item for item in dict.items()])(contentDict))
         return contentDict
 
     def deleteAnotationInFile(self, filePath):
@@ -104,21 +109,23 @@ class hzFiles:
         Argument(s):
                     filePath : file path
         Return(s):
-                    contentDict = {lineNumber：eachLine， key2：value2， …}
+                    contentList = [(lineNumber,eachLine),(key,value),...]
         Notes:
                     2016-10-08 V1.0[Heyn] hz.deleteAnotationInFile("D:\pythonTools\Python\Python\Python\CAN_boot_com_bg.c")
         '''
         contentDict = {}
         multiLineNote = False
+        indexDict = 0
         fileObj = open(filePath, 'r', encoding='SJIS', errors='ignore')
         try:
             for lineNumber, eachLine in enumerate(fileObj):
                 eachLineRegex = re.sub(
                     '([^:]?//.*?$)|(/\*(.*?)\*/)', '', eachLine).strip()
                 if (multiLineNote is False) and (
-                    re.match('.*?/\*', eachLineRegex)):
+                        re.match('.*?/\*', eachLineRegex)):
                     multiLineNote = True
-                    eachLineRegex = re.sub('/\*.*?$', '', eachLineRegex).strip()
+                    eachLineRegex = re.sub(
+                        '/\*.*?$', '', eachLineRegex).strip()
                     # Methods for handling the following annotations
                     # for (i=0; i<100; i++)     /* loop 100 times
                     #                              It's test code */
@@ -126,17 +133,56 @@ class hzFiles:
                     if eachLineRegex != '':
                         contentDict[lineNumber] = eachLineRegex
                 if (multiLineNote is True) and (
-                    re.match('.*?\*/$', eachLineRegex)):
+                        re.match('.*?\*/$', eachLineRegex)):
                     multiLineNote = False
-                    eachLineRegex = re.sub('^.*?\*/$', '', eachLineRegex).strip()
+                    eachLineRegex = re.sub(
+                        '^.*?\*/$', '', eachLineRegex).strip()
                 if multiLineNote is True:
                     continue
                 if eachLineRegex != '':
-                    contentDict[lineNumber] = eachLineRegex
+                    contentDict[indexDict] = [lineNumber, eachLineRegex]
+                    indexDict += 1
         finally:
             fileObj.close()
-        logging.debug(contentDict)
-        return sorted(contentDict.items(), key=lambda d: d[1])
+
+        for key, value in contentDict.items():
+            logging.info(str(key) + "  " + str(value))
+
+        # Sorted by key     key=lambda d: d[0]
+        # Sorted by value   key=lambda d: d[1]
+        # return sorted(contentDict.items(),
+        #               key=lambda d: d[0],
+        #               reverse = False)
+        return contentDict
+
+    def findFunctionNameInDict(self, fileContentDict):
+        '''
+        Argument(s):
+                    fileContentDict = {key : [lineNumber, Values]}
+        Return(s):
+                    None
+        Notes:
+                    2016-10-09 V1.0[Heyn]
+        '''
+        # Dict
+        lineNumList1 = [x[0]
+                        for x in fileContentDict.items() if '{' in x[1][1]]
+        lineNumList2 = [x[0]
+                        for x in fileContentDict.items() if '}' in x[1][1]]
+        # print(lineNumList1)
+        # print(lineNumList2)
+
+        functionLineNum = []
+        functionLineNum.append(lineNumList1[0])
+        for x in lineNumList1:
+            if x > lineNumList2[0]:
+                lineNumList2 = [y for y in lineNumList2 if x < y]
+                # The number of braces{} in the function is the same
+                if len(lineNumList2) == (len(lineNumList1) -
+                                         lineNumList1.index(x)):
+                    functionLineNum.append(x)
+        for x in functionLineNum:
+            print(fileContentDict.get(x - 1))
 
     def getFilesListInCurrentFolder(self):
         ''' Find files in current folder.
@@ -370,3 +416,8 @@ class hzFiles:
             return infoLists
         finally:
             fileObj.close()
+
+if __name__ == '__main__':
+    hz = hzFiles()
+    dicts = hz.deleteAnotationInFile("G:\@gitHub\Python\LD_LCM.c")
+    hz.findFunctionNameInDict(dicts)

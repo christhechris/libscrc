@@ -93,14 +93,15 @@ class hzFiles:
                     fileContentDict  : File Content Dict
                     pattern([\s\S]*) : Search any characters
         Return(s):
-                    contentDict = {lineNumber:eachLine, key:value, ...}
+                    contentDict = {index:[lineNumber, eachLine], key:[value], ...}
         Notes:
                     2016-10-08 V1.0[Heyn]
         '''
         contentDict = {}
-        for key, value in fileContentDict.items():
-            if re.search(pattern, value, re.I):
-                contentDict[key] = value
+        for index, value in fileContentDict.items():
+            if re.search(pattern, value[1], re.I):
+                contentDict[index] = value
+
         print((lambda dict: [item for item in dict.items()])(contentDict))
         return contentDict
 
@@ -111,7 +112,7 @@ class hzFiles:
         Return(s):
                     contentList = [(lineNumber,eachLine),(key,value),...]
         Notes:
-                    2016-10-08 V1.0[Heyn] hz.deleteAnotationInFile("D:\pythonTools\Python\Python\Python\CAN_boot_com_bg.c")
+                    2016-10-08 V1.0[Heyn]
         '''
         contentDict = {}
         multiLineNote = False
@@ -158,12 +159,13 @@ class hzFiles:
     def findFunctionNameInDict(self, fileContentDict):
         '''
         Argument(s):
-                    fileContentDict = {key : [lineNumber, Values]}
+                    fileContentDict = {key : [lineNumber, function]}
         Return(s):
                     None
         Notes:
-                    2016-10-09 V1.0[Heyn]
+                    2016-10-10 V1.0[Heyn]
         '''
+
         # Dict
         lineNumList1 = [x[0]
                         for x in fileContentDict.items() if '{' in x[1][1]]
@@ -172,17 +174,41 @@ class hzFiles:
         # print(lineNumList1)
         # print(lineNumList2)
 
+        if len(lineNumList1) == 0 or len(lineNumList2) == 0:
+            return []
+
         functionLineNum = []
-        functionLineNum.append(lineNumList1[0])
+        functionLineNum.append(lineNumList1[0] - 1)
         for x in lineNumList1:
             if x > lineNumList2[0]:
                 lineNumList2 = [y for y in lineNumList2 if x < y]
                 # The number of braces{} in the function is the same
                 if len(lineNumList2) == (len(lineNumList1) -
                                          lineNumList1.index(x)):
-                    functionLineNum.append(x)
-        for x in functionLineNum:
-            print(fileContentDict.get(x - 1))
+                    functionLineNum.append(x - 1)
+        # Function must be include '(' and ')'
+        # fileContentDict = {key : [lineNumber, Values]}
+        functionLineNum = [
+            key for key in functionLineNum if '(' in fileContentDict.get(key)[1]]
+        # Remove C language key words
+        cKeyWords = ['#define', 'struct', '#if', '#endif']
+        functionLineNum = [key for key in functionLineNum if all(
+            t not in fileContentDict.get(key)[1] for t in cKeyWords)]
+        # e.g. void UART_com_init ( void )
+        functionSplit = list(
+            map(lambda key: fileContentDict.get(key)[1].split('('), functionLineNum))
+        # e.g. ['void UART_com_init ', 'void )']
+        functionSplit = list(
+            map(lambda x: x[0].strip().split(' ')[-1], functionSplit))
+        # Update dict
+        # [New] fileContentDict = {key : [lineNumber, function, functionName]}
+        list(map(lambda val, key: fileContentDict[key].append(
+            val), functionSplit, functionLineNum))
+
+        # Debug information
+        # list(map(lambda key: print(fileContentDict.get(key)), functionLineNum))
+
+        return functionLineNum
 
     def getFilesListInCurrentFolder(self):
         ''' Find files in current folder.
@@ -418,6 +444,22 @@ class hzFiles:
             fileObj.close()
 
 if __name__ == '__main__':
+    # hz = hzFiles()
+    # fileList = hz.findRuleFilesInFolder("DGT_*.[c,h]")
+    # for x in fileList:
+    #     dicts = hz.deleteAnotationInFile(x)
+    #     functionNameDicts = hz.findFunctionNameInDict(dicts)
+    #     if len(functionNameDicts) :
+    #         print (x , len(functionNameDicts))
+    # print(len(fileList))
+
     hz = hzFiles()
-    dicts = hz.deleteAnotationInFile("G:\@gitHub\Python\LD_LCM.c")
-    hz.findFunctionNameInDict(dicts)
+    # dicts = hz.deleteAnotationInFile("G:\@gitHub\Python\LD_LCM.c")
+    # dicts = hz.deleteAnotationInFile(
+    #     "D:\pythonTools\Python\Python\Python\CAN_boot_com_bg.c")
+    dicts = hz.deleteAnotationInFile(
+        "D:\pythonTools\Python\Python\Python\DGT_dtc_flash_main_bg.c")
+    keyWords = hz.findStringInDict(dicts, 'DDGT_FALSE')
+    print(keyWords)
+    functionNameDicts = hz.findFunctionNameInDict(dicts)
+    print(functionNameDicts)

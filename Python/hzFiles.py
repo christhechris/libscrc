@@ -102,7 +102,7 @@ class hzFiles:
             if re.search(pattern, value[1], re.I):
                 contentDict[index] = value
 
-        print((lambda dict: [item for item in dict.items()])(contentDict))
+        # print((lambda dict: [item for item in dict.items()])(contentDict))
         return contentDict
 
     def deleteAnotationInFile(self, filePath):
@@ -141,7 +141,7 @@ class hzFiles:
                 if multiLineNote is True:
                     continue
                 if eachLineRegex != '':
-                    contentDict[indexDict] = [lineNumber, eachLineRegex]
+                    contentDict[indexDict] = [lineNumber + 1, eachLineRegex]
                     indexDict += 1
         finally:
             fileObj.close()
@@ -206,9 +206,46 @@ class hzFiles:
             val), functionSplit, functionLineNum))
 
         # Debug information
-        # list(map(lambda key: print(fileContentDict.get(key)), functionLineNum))
+        list(map(lambda key: print(key, fileContentDict.get(key)), functionLineNum))
 
         return functionLineNum
+
+    def getInfomationFromFile(self, filePath, pattern="[\s\S]*"):
+        '''<ESD> Get information from file.
+        Argument(s):
+                    None
+        Return(s):
+                    [functionName, lineNumber, keywords]
+        Notes:
+                    2016-10-10 V1.0[Heyn]
+        '''
+        infoList = []
+        fileDicts = hz.deleteAnotationInFile(filePath)
+
+        keyWordsList = sorted(hz.findStringInDict(
+            fileDicts, pattern).items(), key=lambda d: d[0], reverse=False)
+
+        fnIndexList = hz.findFunctionNameInDict(fileDicts)
+        print(fnIndexList)
+        print(keyWordsList)
+        for keyIndex, values in keyWordsList:
+            i = [x for x in fnIndexList if x > keyIndex]
+            # infoList.clear()
+
+            a = list(set(fnIndexList).difference(set(i)))
+            a.sort()
+
+            if len(i) == len(fnIndexList):
+                infoList.append('None')
+            elif len(i) == 0:
+                infoList.append(fileDicts[fnIndexList[-1]][2])
+            else:
+                # print(i[0],'--->',fileDicts[i[0]][2])
+                infoList.append(fileDicts[a[-1]][2])
+            infoList.extend(values)
+
+        print('*' * 40)
+        print(infoList)
 
     def getFilesListInCurrentFolder(self):
         ''' Find files in current folder.
@@ -454,12 +491,4 @@ if __name__ == '__main__':
     # print(len(fileList))
 
     hz = hzFiles()
-    # dicts = hz.deleteAnotationInFile("G:\@gitHub\Python\LD_LCM.c")
-    # dicts = hz.deleteAnotationInFile(
-    #     "D:\pythonTools\Python\Python\Python\CAN_boot_com_bg.c")
-    dicts = hz.deleteAnotationInFile(
-        "D:\pythonTools\Python\Python\Python\DGT_dtc_flash_main_bg.c")
-    keyWords = hz.findStringInDict(dicts, 'DDGT_FALSE')
-    print(keyWords)
-    functionNameDicts = hz.findFunctionNameInDict(dicts)
-    print(functionNameDicts)
+    hz.getInfomationFromFile("G:\@gitHub\Python\LD_LCM.c", 'LCD_BUFFER')

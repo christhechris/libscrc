@@ -62,7 +62,25 @@ class Udpthread(threading.Thread):
     def run(self):
         udpconnect(self.ipaddr)
 
+
+def broadcast(broadip=('255.255.255.255', PORTNUM)):
+    """ UDP BroadCast Client"""
+
+    server_message = ''
+    loacladdr = ('0.0.0.0', 10013)
+    sockudp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+    sockudp.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sockudp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sockudp.settimeout(0.5)
+    sockudp.bind(loacladdr)
+    sockudp.sendto(PACKETDATA, broadip)
+    server_message = sockudp.recv(BUFFER_SIZE)
+    server_message = server_message.decode() + '##'
+    print(server_message)
+    return server_message
+
 if __name__ == '__main__':
+    broadcast()
 
     THREADPOOL = []
     LOCALIP = socket.gethostbyname(socket.gethostname())

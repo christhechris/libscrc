@@ -52,7 +52,7 @@ def udpconnect(server_ip='127.0.0.1'):
     sock.close()
 
 
-class Udpthread(threading.Thread):
+class UdpThread(threading.Thread):
     """UDP Thread."""
 
     def __init__(self, ipaddr='127.0.0.1'):
@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     for i in range(255):
         # print(LOCALIP + str(i))
-        th = Udpthread(LOCALIP + str(i))
+        th = UdpThread(LOCALIP + str(i))
         th.start()
         THREADPOOL.append(th)
 

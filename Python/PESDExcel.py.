@@ -1,4 +1,5 @@
 # -*- coding:utf8 -*-
+""" ESD Excel read and write"""
 #!/usr/bin/python
 # Python:   3.5.1
 # Platform: Windows
@@ -7,13 +8,11 @@
 # History:  2016/09/27
 #           2016/10/07 PEP 8 Code Style
 
-import os
-import sys
-import re
-from hzExcel import *
+from CoraExcel import CoraExcel
 
 
-class esdExcel:
+class PESDExcel: # pylint: disable=W0702
+    """ESD Excel Class"""
     colnIndex = [2, 4, 3, 5]  # write excel coln index match values list
     __excel_sheet_index__ = 2
 
@@ -23,54 +22,47 @@ class esdExcel:
     xlsInfoLists = [[] for i in range(3)]  # [[], [], []]
     excelContentDict = {}
 
-    def __init__(self, filePath):
-        ''' .
-        Argument(s):
-                    None
-        Return(s):
-                    None
-        Notes:
-                    2016-09-27 V1.0.0[Heyn]
-        '''
-        super(esdExcel, self).__init__()
-        self.filePath = filePath
-        self.excelhd = hzExcel(self.filePath)
-        xlsInfoLists = self.excelhd.getInfo()
-        self.__excel_sheet_name__ = xlsInfoLists[0][self.__excel_sheet_index__]
-        self.__excel_rown__ = xlsInfoLists[1][self.__excel_sheet_index__]
-        self.__excel_coln__ = xlsInfoLists[2][self.__excel_sheet_index__]
+    def __init__(self, filepath):
+        super(PESDExcel, self).__init__()
+        self.filepath = filepath
+        self.excelhd = CoraExcel(self.filepath)
+        xlsinfolists = self.excelhd.info()
+        self.__excel_sheet_name__ = xlsinfolists[0][self.__excel_sheet_index__]
+        self.__excel_rown__ = xlsinfolists[1][self.__excel_sheet_index__]
+        self.__excel_coln__ = xlsinfolists[2][self.__excel_sheet_index__]
 
         # Read all data from excel to memory.
-        dictKey = 0
+        dictkey = 0
         for line in range(self.__excel_rown__):
-            excelRowList = self.excelhd.readRow(
+            excelrowlist = self.excelhd.readrow(
                 self.__excel_sheet_name__, line)
             # Delete space " "  in excel every cell
-            excelRowList = [(lambda val: "".join([x for x in val if x != " "]))(
-                str(val)) for val in excelRowList]
+            excelrowlist = [(lambda val: "".join([x for x in val if x != " "]))(
+                str(val)) for val in excelrowlist]
             # Delete enter "\n" in excel every cell
-            excelRowList = [(lambda val: "".join([x for x in val if x != "\n"]))(
-                str(val)) for val in excelRowList]
-            self.excelContentDict[dictKey] = excelRowList
-            dictKey += 1
+            excelrowlist = [(lambda val: "".join([x for x in val if x != "\n"]))(
+                str(val)) for val in excelrowlist]
+            self.excelContentDict[dictkey] = excelrowlist
+            dictkey += 1
 
-    def writeExcelRow(self, strMessage, rown=0):
+    def writerow(self, strmessage, rown=0):
         '''Write excel row.
         Argument(s):
-                    strMessage [excelFileName, functionName, keywordsLines, keywords]
+                    strmessage [excelFileName, functionName, keywordsLines, keywords]
         Return(s):
                     None
         Notes:
                     2016-09-27 V1.0.0[Heyn]
         '''
-        values = strMessage.split('#')
+        values = strmessage.split('#')
         # Delete (;) at end of values
-        # values = [(lambda val : "".join([x for x in val if x != ";"]))(str(val)) for val in values]
+        # values = [(lambda val : "".join([x for x in val if x != ";"]))
+        #           (str(val)) for val in values]
         for value in values:
-            self.excelhd.writeCell(value, self.__excel_sheet_index__,
+            self.excelhd.writecell(value, self.__excel_sheet_index__,
                                    self.__excel_rown__ + rown, self.colnIndex[values.index(value)])
 
-    def updateExcelRow(self, strMessage, rown=0):
+    def updaterow(self, strmessage, rown=0):
         '''Update excel row.
         Argument(s):
                     strMessage [excelFileName, functionName, keywordsLines, keywords]
@@ -80,9 +72,10 @@ class esdExcel:
                     2016-09-27 V1.0.0[Heyn]
                     2016-09-28 V1.0.1[Heyn] Search & Matching from Dictionary (origin from excel)
         '''
-        values = strMessage.split('#')
+        values = strmessage.split('#')
         # <xxx> Delete (;) at end of values
-        # values = [(lambda val : "".join([x for x in val if x != ";"]))(str(val)) for val in values]
+        # values = [(lambda val : "".join([x for x in val if x != ";"]))
+        #           (str(val)) for val in values]
 
         for key in range(self.__excel_rown__):
             # excelRowList and values 's Intersection
@@ -108,10 +101,10 @@ class esdExcel:
             except:
                 continue
 
-        self.writeExcelRow(strMessage, rown)
+        self.writerow(strmessage, rown)
         return True
 
-    def saveExcel(self):
+    def save(self):
         '''Save excel workbook.
         Argument(s):
                     None
@@ -120,4 +113,4 @@ class esdExcel:
         Notes:
                     2016-09-27 V1.0.0[Heyn]
         '''
-        self.excelhd.saveWorkBook()
+        self.excelhd.saveworkbook()

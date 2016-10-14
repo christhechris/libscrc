@@ -1,0 +1,11 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "editor.lineNumbers": "on",
+    "editor.fontSize": 15,
+    "editor.wrappingColumn": 300,
+    "files.autoSave": "off",
+    "files.autoSaveDelay": 5000,
+    "python.linting.pylintArgs": [
+        "--unsafe-load-any-extension", "y"
+    ]
+}

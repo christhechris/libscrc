@@ -24,14 +24,14 @@ from glob import glob
 class CoraFiles:
     """ CoraFiles Class """
 
-    def __init__(self, dirpath=sys.path[0]):
+    def __init__(self, dirpath=sys.path[0], debugLevel=logging.WARNING):
         super(CoraFiles, self).__init__()
         self.dirpath = dirpath
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s %(filename)s %(message)s',
-                            datefmt='%a, %d %b %Y %H:%M:%S',
-                            filename='logging.log',
-                            filemode='w')
+        formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
+        logging.basicConfig(level=debugLevel, format=formatopt)
+        # logging.basicConfig(
+        # level=debugLevel, format=formatopt, filemode='w',
+        # filename='logging.log')
 
     def findallfileinfolder(self):
         """ Find all files in current folder.

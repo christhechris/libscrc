@@ -43,7 +43,7 @@ class CoraExcel:
                     self.__excelobjcopy = copy(self.__excelobj)
                     self.isopened = True
 
-                    formatopt = '[%(asctime)s] [%(levelname)s] %(message)s'
+                    formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
                     logging.basicConfig(level=debugLevel, format=formatopt)
                     # logging.basicConfig(
                     # level=debugLevel, format=formatopt, filemode='w',

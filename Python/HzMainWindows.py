@@ -1,4 +1,5 @@
 # -*- coding:utf8 -*-
+"""QT5 for python."""
 #!/usr/bin/python
 # Python:   3.5.1
 # Platform: Windows
@@ -8,17 +9,16 @@
 #           2016/10/07 PEP 8 Code Style
 
 import sys
-import os
-import os.path
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QFont
 from PyQt5 import QtGui, uic, QtCore
 
+
 Ui_MainWindow, QtBaseClass = uic.loadUiType("MainWindows.ui")
 
-
-class hzMainWindowsDlg(QMainWindow, Ui_MainWindow):
+class HzMainWindows(QMainWindow, Ui_MainWindow):
     signelStart = QtCore.pyqtSignal(list)
     signeltableWidget = QtCore.pyqtSignal(list)
 
@@ -128,7 +128,7 @@ class hzMainWindowsDlg(QMainWindow, Ui_MainWindow):
         self.signeltableWidget.connect(self.signeltableWidgetUpdate)
 
 
-# app = QApplication(sys.argv)
-# dlg = hzMainWindowsDlg()
-# dlg.show()
-# sys.exit(app.exec_())
+app = QApplication(sys.argv)
+dlg = HzMainWindows()
+dlg.show()
+sys.exit(app.exec_())

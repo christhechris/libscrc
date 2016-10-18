@@ -116,7 +116,15 @@ class CoraFiles:
         Return(s):
                     contentlist = [(linenumber,eachline),(key,value),...]
         Notes:
-                    2016-10-08 V1.0[Heyn]
+                    2016-10-08 V1.0.0[Heyn]
+                    2016-10-18 V1.0.1[Heyn]
+                    (1) re.sub(r'([^:]?//.*?$)|(/\\*(.*?)\\*/)', '', eachline).strip()
+                    Change TO:
+                    (2) re.sub(r'([^:]?//.*?$)|(/\\*(.*?)\\*/$)', '', eachline).strip()
+                    i.e.
+                    /* This is a test / message. */
+                    If used (1) process  -> result = message. */
+                    If used (2) process  -> result = ''
         """
         contentdict = {}
         multilinenote = False
@@ -125,7 +133,7 @@ class CoraFiles:
         try:
             for linenumber, eachline in enumerate(fileobj):
                 eachlineregex = re.sub(
-                    r'([^:]?//.*?$)|(/\\*(.*?)\\*/)', '', eachline).strip()
+                    r'([^:]?//.*?$)|(/\\*(.*?)\\*/$)', '', eachline).strip()
                 if (multilinenote is False) and (
                         re.match('.*?/\\*', eachlineregex)):
                     multilinenote = True
@@ -218,6 +226,8 @@ class CoraFiles:
         Argument(s):
                     filepath : file path
                     pattern([\\s\\S]*) : Search any characters
+                    i.e.
+                    pattern = "for|<<|>>|while|\\+\\+|\\+\\=|--|-\\="
         Return(s):
                     [functionName, lineNumber, keywords]
         Notes:

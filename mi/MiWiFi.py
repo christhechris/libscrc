@@ -6,6 +6,7 @@
 # Author:   Heyn (heyunhuan@gmail.com)
 # Program:  XiaoMi Router Control.
 # History:  V1.0.0 2016/10/18  [Router: R1D  ROM: 2.6.10]
+#           V1.0.1 2016/10/19  New addredirect function
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -25,9 +26,9 @@ from Crypto.Hash import SHA
 class MiWiFi:
     """XiaoMi Router"""
 
-    def __init__(self, hostip='192.168.0.1', debugLevel=logging.WARNING):
+    def __init__(self, debugLevel=logging.WARNING):
         super(MiWiFi, self).__init__()
-        self.hostip = hostip
+        self.host = '192.168.0.1'
         self.stok = None
         formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
         logging.basicConfig(level=debugLevel, format=formatopt)
@@ -35,7 +36,7 @@ class MiWiFi:
         # level=debugLevel, format=formatopt, filemode='w',
         # filename='logging.log')
 
-    def token(self, pwdtext):
+    def connect(self, host='localhost', pwdtext='admin'):
         """ Get MiWiFi Router token.
         Argument(s):
                     pwdtext : Mi Router's passwords.
@@ -44,13 +45,14 @@ class MiWiFi:
         Notes:
                     2016-10-18 V1.0.0[Heyn]
         """
+        self.host = host
 
-        request = requests.get('http://' + self.hostip +
+        request = requests.get('http://' + self.host +
                                '/cgi-bin/luci/web/home')
         key = re.findall(r'key: \'(.*)\',', request.text)[0]
         mac = re.findall(r'deviceId = \'(.*)\';', request.text)[0]
 
-        url = 'http://' + self.hostip + '/cgi-bin/luci/api/xqsystem/login'
+        url = 'http://' + self.host + '/cgi-bin/luci/api/xqsystem/login'
         nonce = "0_" + mac + "_" + \
             str(int(time.time())) + "_" + str(random.randint(1000, 10000))
         pwd = SHA.new()
@@ -73,6 +75,47 @@ class MiWiFi:
         else:
             return False
 
+    def addredirect(self, proto=1, sport=54321, dip='192.168.0.100', dport=12345):
+        """ Add a port redirect to router.
+        Argument(s):
+                    proto : 1 = TCP PROTOCOL
+                            2 = UDP PROTOCOL
+                            3 = TCP/UDP PROTOCOL
+                    sport : source port
+                    dip   : destination ip
+                    dport : destination port
+        Return(s):
+                    None
+        Notes:
+                    2016-10-19 V1.0.0[Heyn]
+        """
+
+        url = 'http://' + self.host + '/cgi-bin/luci/;stok=' + \
+            self.stok + '/api/xqnetwork/add_redirect'
+
+        data = {
+            "name:" : 'Python',
+            "proto" : proto,
+            "sport" : sport,
+            "ip"    : dip,
+            "dport" : dport
+        }
+        response = requests.post(url=url, data=data, timeout=5)
+        resjson = json.loads(response.content.decode())
+        if resjson['code'] != 0:
+            print('New redirect port failed.(code = %d)' % resjson['code'])
+            return False
+
+        # [WARNING] Failed to parse headers
+        # url = 'http://' + self.host + '/cgi-bin/luci/;stok=' + \
+        #     self.stok + '/api/xqnetwork/redirect_apply'
+        # applyjson = json.loads(requests.get(url).content.decode())
+        # if applyjson['code'] != 0:
+        #     return False
+
+        print('New redirect port success.')
+        return True
+
     def reboot(self):
         """ Reboot MiWiFi Router.
         Argument(s):
@@ -83,7 +126,7 @@ class MiWiFi:
                     2016-10-18 V1.0.0[Heyn]
         """
 
-        url = 'http://' + self.hostip + '/cgi-bin/luci/;stok=' + \
+        url = 'http://' + self.host + '/cgi-bin/luci/;stok=' + \
             self.stok + '/api/xqsystem/reboot?client=web'
         try:
             rebootjson = json.loads(requests.get(
@@ -105,7 +148,7 @@ class MiWiFi:
                     2016-10-18 V1.0.0[Heyn]
         """
 
-        url = 'http://' + self.hostip + '/cgi-bin/luci/;stok=' + \
+        url = 'http://' + self.host + '/cgi-bin/luci/;stok=' + \
             self.stok + '/api/misystem/status'
         strjson = requests.get(url, timeout=5).content.decode()
         try:
@@ -133,7 +176,7 @@ class MiWiFi:
                     2016-10-18 V1.0.0[Heyn]
         """
 
-        url = 'http://' + self.hostip + '/cgi-bin/luci/;stok=' + \
+        url = 'http://' + self.host + '/cgi-bin/luci/;stok=' + \
             self.stok + '/api/xqnetwork/wan_info'
         try:
             wlanjson = json.loads(requests.get(
@@ -149,9 +192,9 @@ class MiWiFi:
         """Ping command."""
 
         if platform.system() == 'Windows':
-            cmd = ["ping", "-{op}".format(op='n'), "1", self.hostip]
+            cmd = ["ping", "-{op}".format(op='n'), "1", self.host]
         else:
-            cmd = ["ping", "-{op}".format(op='c'), "1", self.hostip]
+            cmd = ["ping", "-{op}".format(op='c'), "1", self.host]
 
         output = os.popen(" ".join(cmd)).readlines()
         for line in list(output):
@@ -163,17 +206,19 @@ class MiWiFi:
 
 if __name__ == '__main__':
 
-    MI = MiWiFi('192.168.0.1')
+    MI = MiWiFi()
 
     while True:
         try:
             if MI.ping() is True:
-                if MI.token('admin'):
+                if MI.connect('192.168.0.1', 'psdcd2016'):
                     MI.reboot()
+                    # MI.addredirect(1, 55555, '192.168.0.222', 12345)
                     time.sleep(20)
+                    # break
             else:
-                time.sleep(5)
                 print('Waiting......')
+                time.sleep(30)
         except KeyboardInterrupt:
             import sys
             sys.exit(1)

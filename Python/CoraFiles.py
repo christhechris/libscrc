@@ -6,6 +6,7 @@
 # Author:   Heyn (heyunhuan@gmail.com)
 # Program:  File's read and search.
 # History:  V1.0.0 2016/10/13
+#           V1.0.1 2016/10/20 Modify findfunctionnameindict bug.
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -176,7 +177,11 @@ class CoraFiles:
         Return(s):
                     functionlinenum
         Notes:
-                    2016-10-08 V1.0[Heyn]
+                    2016-10-08 V1.0.0[Heyn]
+                    2016-10-20 V1.0.1[Heyn]
+                        if num > linenumlist2[0]:
+                        if linenumlist2 == None. List index will be out of range
+                        Modify -> if not linenumlist2 and num > linenumlist2[0]:
         """
 
         # Dict
@@ -191,7 +196,7 @@ class CoraFiles:
         functionlinenum = []
         functionlinenum.append(linenumlist1[0] - 1)
         for num in linenumlist1:
-            if num > linenumlist2[0]:
+            if not linenumlist2 and num > linenumlist2[0]:
                 linenumlist2 = [y for y in linenumlist2 if num < y]
                 # The number of braces{} in the function is the same
                 if len(linenumlist2) == (len(linenumlist1) -

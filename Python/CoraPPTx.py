@@ -43,7 +43,8 @@ class CoraPPTx:
     def shape_type(self, slide_index, shape_index):
         """ Get Shape's type.
         Argument(s):
-                    None
+                    slide_index: Slide Index.
+                    shape_index: Shape Index.
         Return(s):
                     =13 [It's a picture]
         Notes:
@@ -51,6 +52,21 @@ class CoraPPTx:
         """
 
         return self.presentation.Slides(slide_index).Shapes(shape_index).Type
+
+    def shape_width_height(self, slide_index):
+        """ Get All Shape's Width & Height.
+        Argument(s):
+                    slide_index: Slide Index.
+        Return(s):
+                    width : Unit(Pound) 1Pound=0.3528mm
+                    height: Unit(Pound) 1Pound=0.3528mm
+        Notes:
+                    2016-10-21 V1.0.0[Heyn]
+        """
+        for item in range(1, self.shape_count(slide_index) + 1):
+            width = self.presentation.Slides(slide_index).Shapes(item).Width
+            height = self.presentation.Slides(slide_index).Shapes(item).Height
+            print(width, height)
 
     def add_image(self, img, slide_index):
         """Add a picture to slide."""
@@ -74,8 +90,8 @@ if __name__ == '__main__':
     print('PPTx Slide = %d' % SLIDE_COUNT)
     SHAPE_COUNT = CORAPPTX.shape_count(1)
     print('PPTx Shape = %d' % SHAPE_COUNT)
-    CORAPPTX.del_image(1)
+    # CORAPPTX.del_image(1)
     # CORAPPTX.del_image(2)
-
+    CORAPPTX.shape_width_height(1)
     # for i in range(3):
     #     CORAPPTX.add_image('d:\\123.png', 1)

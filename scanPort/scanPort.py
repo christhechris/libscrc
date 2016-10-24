@@ -1,92 +1,76 @@
 # -*- coding:utf8 -*-
+"""Port Scan."""
 #!/usr/bin/python
-# Python:   3.5.1
+# Python:   3.5.2
 # Platform: Windows
 # Authro:   Heyn
 # Program:  Scan port
-# History:  2016.05.04  Ver1.0 [Windows]
-#           2016.05.07  Ver1.1 [Windows]
- 
-import sys, socket, time, threading
+# History:  2016.05.04  Ver1.0.0 [Heyn]
+#           2016.05.07  Ver1.0.1 [Heyn]
+#           2016.10.24  Ver1.0.2 [Heyn] New Process & Threads
 
-TIMEOUT = 1
 
-def pingPort(ip, port, timeout = TIMEOUT):
-    """
-    """
-    global portList
+import time
+import socket
+import threading
+import multiprocessing
+
+
+IPADDR = '192.168.0.1'
+TIMEOUT = 0.5
+THREADS_MAX_NUM = 600
+
+
+def scan_port(port):
+    """Scan Server Port."""
     try:
         if port >= 65535:
-            print ('Scan port over!')
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(timeout)
-        result=s.connect_ex((ip,port))
-        if result == 0 :
-            #print  (ip,u':',port,'Port is opening!')
-            portList.append(port)
-        s.close()
-        
-    except Exception as e :
-        print ('Scan port error : %s' %e)
+            return
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(TIMEOUT)
+        result = sock.connect_ex((IPADDR, port))
+        if result == 0:
+            print(IPADDR, u':', port, 'Port is opening!')
+            return port
+        sock.close()
+
+    except BaseException:
+        pass
+    return 0
 
 
-class Scan(threading.Thread):
-    """
-    """
-    
-    def __init__(self, ip, timeout):
-        """
-        """
+class ScanThread(threading.Thread):
+    """Scan Thread."""
+
+    def __init__(self, port):
         threading.Thread.__init__(self)
-        self.ip = ip
-        self.timeout = timeout
-        
-    def run(self):
-        """
-        """
-        global mutex, portBegin, portEnd
-        threadname = threading.currentThread().getName()
-        while True:
-            mutex.acquire()
-            portBegin += 1
-            if (portBegin > portEnd) :
-                mutex.release()
-                break;
-            mutex.release()
-        pingPort(self.ip, portBegin, self.timeout)
-            
-def scanUrl(url, p_begin, p_end, timeout):
-    """
-    """
-    global mutex, portBegin, portEnd, portList
-    threads = []
-    portList = []
-    mutex=threading.Lock()
-    ip = str(socket.gethostbyname(url))
-    print ('Scan start %s' % ip ," port:[from %d"%p_begin,"to %d]"%p_end)
-    start_time=time.time()
+        self.port = port
 
-    portBegin = p_begin
-    portEnd = p_end
-    for i in range(100):
-        thread = Scan(ip,timeout)
-        thread.start()
+    def run(self):
+        scan_port(self.port)
+
+
+def processtask(port):
+    """Process Task."""
+    threads = []
+    for i in range(port, port + THREADS_MAX_NUM):
+        thread = ScanThread(i)
         threads.append(thread)
+
+    for threadobj in threads:
+        threadobj.start()
 
     for thread in threads:
         thread.join()
-        
-    print ('Scan port finished, used time ：%.2fs' %(time.time()-start_time))
 
-    if portList:
-        portList.sort()
-        print ("On host \"",url,"\" port:[ ",end="")
-        for port in portList:
-            print (port," ", end="")
-        print ("] is opened.")
-    else :
-        print ("On host \"",url,"\" can't find any port.")
-    
-if __name__=='__main__':
-    url = input('Input the ip you want to scan:\n')
-    scanUrl(url,0,100,0.1)
+    return
+
+if __name__ == '__main__':
+
+    START_TIME = time.time()
+    POOLS = multiprocessing.Pool(8)
+    POOLS.map(processtask, map(lambda x: x * THREADS_MAX_NUM,
+                               [x for x in range(int(65535 / THREADS_MAX_NUM) + 1)]))
+    POOLS.close()
+    POOLS.join()
+    print('Scan port finished, used time ：%.2fs' % (time.time() - START_TIME))

@@ -1,58 +1,92 @@
 # -*- coding:utf8 -*-
-#!/usr/bin/python
-# Python:   3.5.1
+""" ping """
+# !/usr/bin/python
+# Python:   3.5.2
 # Platform: Windows
 # Author:   Heyn (heyunhuan@gmail.com)
-# Program:  ping
-# History:  2016.06.12  Ver1.0 [Windows]
- 
+# Program:  File's read and search.
+# History:  2016/06/12  V1.0.0[Heyn]
+#           2016/10/24  V1.0.1[Heyn]
 
-import os
-import sys
+# (1) Limit all lines to a maximum of 79 characters
+# (2) Private attrs use [__private_attrs]
+# (3) [PyLint Message: See web: http://pylint-messages.wikidot.com/]
+
+import re
 import time
+import locale
+import socket
 import platform
-import threading 
-  
-def get_os(): 
-    ''''' 
-    get os 类型 
-    '''
-    os = platform.system() 
-    if os == "Windows": 
+
+
+from subprocess import Popen, PIPE
+
+
+def get_os():
+    """Get OS Type."""
+    ost = platform.system()
+    if ost == "Windows":
         return "n"
-    else: 
+    else:
         return "c"
-    
-def ping_ip(ip_str): 
-    cmd = ["ping", "-{op}".format(op=get_os()), "1", ip_str] 
-    output = os.popen(" ".join(cmd)).readlines()
-    #print (output)
-    
-    flag = False
-    for line in list(output): 
-        if not line: 
-            continue
-        if str(line).upper().find("TTL") >=0: 
-            flag = True
-            break
-    if flag: 
-        print ("ip: %s is ok ***"%ip_str )
-  
-def find_ip(ip_prefix): 
-    ''''' 
-    给出当前的127.0.0 ，然后扫描整个段所有地址 
-    '''
-    for i in range(1,256): 
-        ip = '%s.%s'%(ip_prefix,i) 
-        threading.Thread(target = ping_ip,args = (ip,)).start() 
-        time.sleep(0.3) 
-    
-if __name__ == "__main__": 
-    print ("start time %s"%time.ctime())
-    commandargs = sys.argv[1:] 
-    args = "".join(commandargs)   
-    
-    ip_prefix = '.'.join(args.split('.')[:-1])
-    ip_prefix = "192.168.0"
-    find_ip(ip_prefix) 
-    print ("end time %s"%time.ctime())
+
+def invoke_ping(addr):
+    """Ping command."""
+    cmd = ["ping", "-{op}".format(op=get_os()), "1", addr]
+
+    ret = None
+    try:
+        ret = Popen(cmd, bufsize=1024, stdout=PIPE)
+    except ValueError:
+        print('ERROR occur in invoke_ping: ' + addr)
+    return ret
+
+def check_online(popen_obj):
+    """Send ping command and get ping echo check host online"""
+    echo = popen_obj.communicate()[0].decode(
+        locale.getdefaultlocale()[1]).split('\n')
+
+    if len(echo) >= 3:
+        findlist = re.findall('\\d+(?=ms)|(?<=TTL\\=)\\d+', echo[2])
+        if len(findlist) == 2:
+            return (int(findlist[0]), int(findlist[1]))
+
+    return tuple()
+
+
+def ping_scan(dst):
+    """Scan ping command."""
+    oks = []
+    scq = {}
+    net_addr = dst.split('.')
+    for i in range(0, 256):
+        net_addr[3] = str(i)
+        tmp = invoke_ping('.'.join(net_addr))
+        if not isinstance(tmp, int):
+            scq[i] = tmp
+
+    while len(scq) != 0:
+        to_be_removed = []
+        for key, val in scq.items():
+            if val.poll() != None:
+                ret = check_online(val)
+                if len(ret) > 0:
+                    net_addr[3] = str(key)
+                    oks.append((key, ret))
+                to_be_removed.append(key)
+        for i in to_be_removed:
+            scq.pop(i)
+    return oks
+
+
+if __name__ == '__main__':
+    START_TIME = time.clock()
+    DST_NET = socket.gethostbyname(socket.gethostname())
+    ONLINE_LIST = ping_scan(DST_NET)
+    ONLINE_LIST.sort()
+    PREFIX = '.'.join(DST_NET.split('.')[0:3])
+    for item in ONLINE_LIST:
+        fmt = '%-15s time=%-5dms   ttl=%d'
+        print(fmt % (PREFIX + '.' + str(item[0]), item[1][0], item[1][1]))
+    print('%d hosts on line' % len(ONLINE_LIST))
+    print('Process time: %lfs' % (time.clock() - START_TIME))

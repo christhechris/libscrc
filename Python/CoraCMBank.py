@@ -53,7 +53,6 @@ class CoraCMB:
 
         # print(ret)
 
-
 if __name__ == '__main__':
 
     while True:

@@ -21,41 +21,50 @@ import urllib
 import urllib.request
 import urllib.parse
 
+
 class CoraCMB:
     """China Merchants Bank."""
 
     def __init__(self, debugLevel=logging.WARNING):
         super(CoraCMB, self).__init__()
-
+        self.html = ''
         formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
         logging.basicConfig(level=debugLevel, format=formatopt)
 
     def loadurl(self):
         """Loading"""
-        url = 'http://fx.cmbchina.com/hq/'
-        response = urllib.request.urlopen(url)
-        html = response.read().decode('UTF-8')
+        # url = 'http://fx.cmbchina.com/hq/'
+        url = 'http://english.cmbchina.com/Rate/ForexRates.aspx'
+        try:
+            response = urllib.request.urlopen(url)
+            self.html = response.read().decode('UTF-8')
+        except BaseException:
+            return False
+        return True
 
-        start_index = html.find(r'澳大利亚元')
-        stop_index = html.find(r'澳大利亚元', start_index + 1)
-        newstr = html[start_index:stop_index]
-        regx = r'[0-9\.:]+'
-        ret = re.findall(regx, newstr)
-        print(ret[6] + ' AUD -> (SO) = ' + ret[2] + ' (SI) = ' + ret[4])
-
-        start_index = html.find(r'美元')
-        stop_index = html.find(r'美元', start_index + 1)
-        newstr = html[start_index:stop_index]
-        regx = r'[0-9\.:]+'
-        ret = re.findall(regx, newstr)
-        print(ret[6] + ' USD -> (SO) = ' + ret[2] + ' (SI) = ' + ret[4])
-        print('*'*40)
-
-        # print(ret)
+    def lastrates(self, currency):
+        """Latest FX exchange rates"""
+        currencypos = self.html.find(currency)
+        lbpos = self.html.find(r'Renminbi', currencypos)
+        rbpos = self.html.find(r'</tr>', lbpos + 1)
+        if lbpos > 0 and rbpos > 0:
+            newstr = self.html[lbpos:rbpos]
+            ret = re.findall(r'[0-9\.:]+', newstr)
+            if ret and len(ret) == 5:
+                # if ret[1] > '507.72':
+                #     print('OK')
+                print(ret[4] + ' ' + currency.ljust(20) +
+                      ' -> (SO) = ' + ret[1] + ' (SI) = ' + ret[2])
 
 if __name__ == '__main__':
 
+    CORACMB = CoraCMB(debugLevel=logging.INFO)
     while True:
-        CORACMB = CoraCMB(debugLevel=logging.INFO)
-        CORACMB.loadurl()
-        time.sleep(30)
+        if CORACMB.loadurl():
+            # CURRENCYLIST = ['Australian Dollar', 'U.S. Dollar']
+            CURRENCYLIST = ['Australian Dollar']
+            for index in CURRENCYLIST:
+                CORACMB.lastrates(index)
+            # print('*' * 60)
+            time.sleep(30)
+

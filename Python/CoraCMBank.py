@@ -21,6 +21,8 @@ import urllib
 import urllib.request
 import urllib.parse
 
+import CoraWeChat
+
 
 class CoraCMB:
     """China Merchants Bank."""
@@ -28,6 +30,7 @@ class CoraCMB:
     def __init__(self, debugLevel=logging.WARNING):
         super(CoraCMB, self).__init__()
         self.html = ''
+        self.message = ''
         formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
         logging.basicConfig(level=debugLevel, format=formatopt)
 
@@ -53,12 +56,17 @@ class CoraCMB:
             if ret and len(ret) == 5:
                 # if ret[1] > '507.72':
                 #     print('OK')
-                print(ret[4] + ' ' + currency.ljust(20) +
-                      ' -> (SO) = ' + ret[1] + ' (SI) = ' + ret[2])
+                self.message = ret[4] + ' '
+                self.message = self.message + currency.ljust(20)
+                self.message = self.message + ' -> (SO) = ' + ret[1] + ' (SI) = ' + ret[2]
+
+                print(self.message)
 
 if __name__ == '__main__':
 
     CORACMB = CoraCMB(debugLevel=logging.INFO)
+    WEBWX = CoraWeChat.WebWeChat()
+    WEBWX.start()
     while True:
         if CORACMB.loadurl():
             # CURRENCYLIST = ['Australian Dollar', 'U.S. Dollar']
@@ -66,5 +74,5 @@ if __name__ == '__main__':
             for index in CURRENCYLIST:
                 CORACMB.lastrates(index)
             # print('*' * 60)
+            WEBWX.sendmsg('Heyn', CORACMB.message)
             time.sleep(30)
-

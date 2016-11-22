@@ -14,7 +14,6 @@
 
 import os
 import re
-import sys
 import time
 import json
 import random
@@ -23,9 +22,9 @@ import urllib.request
 import urllib.parse
 # pip install requests 2016-09-29
 import requests
-import xml.dom.minidom
-import multiprocessing
-import platform
+# import xml.dom.minidom
+# import multiprocessing
+# import platform
 
 
 def catch_keyboard_interrupt(fnc):
@@ -353,6 +352,12 @@ class WebWeChat(object):
                 url=url, data=urllib.parse.urlencode(params).encode(encoding='UTF-8'))
         response = urllib.request.urlopen(request)
         data = response.read().decode()
+
+        # For debug.
+        # fns = open(os.getcwd() + '/webwxgetcontact.json', 'wb')
+        # fns.write(data.encode())
+        # fns.close()
+
         if jsonfmt:
             return json.loads(data)
         return data
@@ -419,7 +424,8 @@ class WebWeChat(object):
                         time.sleep(1)
             else:
                 if self._webwxsendmsg(word, ids):
-                    print('[*] The message was sent successfully')
+                    pass
+                    # print('[*] The message was sent successfully')
                 else:
                     print('[*] Message delivery failed')
         else:

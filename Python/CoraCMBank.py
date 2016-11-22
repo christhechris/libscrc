@@ -12,7 +12,6 @@
 # (3) [PyLint Message: See web: http://pylint-messages.wikidot.com/]
 
 
-import os
 import re
 import time
 import logging
@@ -74,5 +73,5 @@ if __name__ == '__main__':
             for index in CURRENCYLIST:
                 CORACMB.lastrates(index)
             # print('*' * 60)
-            WEBWX.sendmsg('Heyn', CORACMB.message)
+            WEBWX.sendmsg('filehelper', CORACMB.message)
             time.sleep(30)

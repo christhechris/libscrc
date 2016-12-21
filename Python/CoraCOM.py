@@ -1,6 +1,5 @@
 # -*- coding:utf8 -*-
 """ CoraCom COM Server."""
-# PyCoraCom.py --unregister
 # !/usr/bin/python
 # Python:   3.5.2
 # Platform: Windows
@@ -8,9 +7,45 @@
 # Program:  CoraCom.
 # History:  2016/12/20
 
+
+# [Modules]
+#
+# 1) pypiwin32-219-cp35-none-win32.whl
+#    Web: https://pypi.python.org/pypi/pypiwin32/219
+# 2) pywin32-220.win32-py3.5.exe or pywin32-220.win-amd64-py3.5.exe
+#    Web: https://sourceforge.net/projects/pywin32/files/pywin32/
+#
+
+# [Register]
+#
+# PyCoraCom.py --register
+# PyCoraCom.py --unregister
+# or
+# Python IDEL->F5
+
+# [Pyinstaller to *.exe]
+# pyinstaller -F D:\..\..\PyNCTool.py --hidden-import=win32timezone
+#
+
+# [Run *.exe (Windows Plugins)]
+# 1) vc_redist.x86.exe or vc_redist.x64.exe
+# Web:https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
+#
+
+# [Using]
+# 1) VBS
+# Set PyCom = CreateObject("Cora.PyNCTool")
+# PyCom.open()
+# PyCom.sleep(1000)
+# PyCom.read("Hello I'm (read)!")
+# PyCom.write("Hello I'm (write)!")
+# PyCom.close()
+#
+
 import time
 import errno
 import socket
+import pythoncom
 
 DEFAULT_IP = '127.0.0.1'
 DEFAULT_PORT = 54321
@@ -96,18 +131,20 @@ class _WrapPyCoraCom(CoraCOM):
     print(pythoncom.CreateGuid())
     """
 
-    _reg_clsid_ = '{8780D017-BB63-42AE-8DAC-6D5C6CE4FFC9}'
-    _reg_progid_ = "Python.PyCoraCom"
+    _reg_desc_ = "Python COM Server"
+    # _reg_clsid_ = '{8780D017-BB63-42AE-8DAC-6D5C6CE4FFC9}'
+    _reg_clsid_ = pythoncom.CreateGuid()
+    _reg_progid_ = "Cora.PyNCTool"
     _public_methods_ = ['sleep', 'open', 'read', 'write', 'ncprint', 'alert', 'close']
 
 
 if __name__ == '__main__':
-    # import win32com.server.register
-    # win32com.server.register.UseCommandLine(_WrapPyCoraCom)
-    # input()
-    CORACOM = CoraCOM()
-    CORACOM.open()
-    CORACOM.sleep(1000)
-    print(CORACOM.read('Hello'))
-    CORACOM.write('World')
-    CORACOM.close()
+    import win32com.server.register
+    win32com.server.register.UseCommandLine(_WrapPyCoraCom)
+    input()
+    # CORACOM = CoraCOM()
+    # CORACOM.open()
+    # CORACOM.sleep(1000)
+    # print(CORACOM.read('Hello'))
+    # CORACOM.write('World')
+    # CORACOM.close()

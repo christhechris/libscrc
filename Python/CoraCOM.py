@@ -47,6 +47,9 @@ import errno
 import socket
 import pythoncom
 
+WINDOWS_COM_NAME = 'Cora.PyNCTool'
+RETURN_NG_CODE = 'ERROR'
+
 DEFAULT_IP = '127.0.0.1'
 DEFAULT_PORT = 54321
 
@@ -56,72 +59,83 @@ TCP_SOCKET_NO_BLOCKING = 0
 BUFFER_SIZE = 1024
 TIMEOUT = 2
 
-
 class CoraCOM:
     """CoraCOM Class"""
 
     def __init__(self):
-        self.sock = ''
+        self.sock = None
+        self.isopened = False
 
     def __del__(self):
         self.close()
+        self.sock = None
+        self.isopened = False
 
     def open(self, tmr=TIMEOUT):
         """Connect Socket."""
-        address = (DEFAULT_IP, DEFAULT_PORT)
+        iplist = [DEFAULT_IP]
+        iplist.extend(socket.gethostbyname_ex(socket.gethostname())[-1])
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(tmr)
 
-        try:
-            self.sock.connect(address)
-        except socket.error as err:
-            # EWOULDBLOCK is not an error, as the socket is non-blocking
-            if err.errno != errno.EWOULDBLOCK:
-                raise
+        for ips in iplist:
+            address = (ips, DEFAULT_PORT)
+            try:
+                self.sock.connect(address)
+                self.sock.setblocking(TCP_SOCKET_BLOCKING)
+                self.isopened = True
+                break
+            except BaseException:
+                continue
 
-        self.sock.setblocking(TCP_SOCKET_BLOCKING)
-        return True
+        return self.isopened
 
     def close(self):
         """Close Socket."""
-        self.sock.close()
+        try:
+            self.sock.close()
+            self.sock = None
+            self.isopened = False
+        except BaseException:
+            return False
+        return True
+
+    def _post(self, strmsg):
+        """Send and Recv Messages from TCP server"""
+        if self.isopened is not True:
+            return RETURN_NG_CODE
+
+        try:
+            self.sock.send(strmsg.encode('UTF-8'))
+            bytesmsg = self.sock.recv(BUFFER_SIZE)
+        except BaseException:
+            return RETURN_NG_CODE
+
+        if bytesmsg == b'':
+            return RETURN_NG_CODE
+
+        return bytesmsg.decode('UTF-8')
 
     def sleep(self, tmr):
         """Sleep Method."""
         time.sleep(tmr / 1000)
 
     def read(self, strmsg):
-        """CoraCom Read Method."""
-        try:
-            self.sock.send(strmsg.encode())
-            bytesmsg = self.sock.recv(BUFFER_SIZE)
-        except BaseException:
-            return 'ERROR'
-        return bytesmsg.decode('UTF-8')
+        """NCTool Read Method."""
+        return self._post(strmsg)
 
     def write(self, strmsg):
-        """CoraCom Write Method."""
-        try:
-            self.sock.send(strmsg.encode('UTF-8'))
-            self.sock.recv(BUFFER_SIZE)
-        except BaseException:
-            return 'ERROR'
+        """NCTool Write Method."""
+        return self._post(strmsg)
 
     def ncprint(self, strmsg):
-        """CoraCom Print Method."""
-        try:
-            self.sock.send(strmsg.encode('UTF-8'))
-            self.sock.recv(BUFFER_SIZE)
-        except BaseException:
-            return 'ERROR'
+        """NCTool Print Method."""
+        return self._post(strmsg)
 
     def alert(self, strmsg):
-        """CoraCom Alert Method."""
-        try:
-            self.sock.send(strmsg.encode('UTF-8'))
-            self.sock.recv(BUFFER_SIZE)
-        except BaseException:
-            return 'ERROR'
+        """NCTool Alert Method."""
+        return self._post(strmsg)
 
 
 class _WrapPyCoraCom(CoraCOM):
@@ -139,12 +153,12 @@ class _WrapPyCoraCom(CoraCOM):
 
 
 if __name__ == '__main__':
-    import win32com.server.register
-    win32com.server.register.UseCommandLine(_WrapPyCoraCom)
-    input()
-    # CORACOM = CoraCOM()
-    # CORACOM.open()
-    # CORACOM.sleep(1000)
-    # print(CORACOM.read('Hello'))
-    # CORACOM.write('World')
-    # CORACOM.close()
+    # import win32com.server.register
+    # win32com.server.register.UseCommandLine(_WrapPyCoraCom)
+
+    CORACOM = CoraCOM()
+    print(CORACOM.open())
+    CORACOM.sleep(1000)
+    print(CORACOM.read('Hello'))
+    print(CORACOM.write('World'))
+    print(CORACOM.close())

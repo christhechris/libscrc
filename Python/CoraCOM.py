@@ -18,10 +18,10 @@
 
 # [Register]
 #
-# PyCoraCom.py --register
-# PyCoraCom.py --unregister
+# [Command Line] python PyCoraCom.py --register
+# [Command Line] python PyCoraCom.py --unregister
 # or
-# Python IDEL->F5
+# [register] Python IDEL->F5
 
 # [Pyinstaller to *.exe]
 # pyinstaller -F D:\..\..\PyNCTool.py --hidden-import=win32timezone
@@ -146,8 +146,8 @@ class _WrapPyCoraCom(CoraCOM):
     """
 
     _reg_desc_ = "Python COM Server"
-    # _reg_clsid_ = '{8780D017-BB63-42AE-8DAC-6D5C6CE4FFC9}'
-    _reg_clsid_ = pythoncom.CreateGuid()
+    _reg_clsid_ = '{8780D017-BB63-42AE-8DAC-6D5C6CE4FFC9}'
+    #_reg_clsid_ = pythoncom.CreateGuid()
     _reg_progid_ = "Cora.PyNCTool"
     _public_methods_ = ['sleep', 'open', 'read', 'write', 'ncprint', 'alert', 'close']
 

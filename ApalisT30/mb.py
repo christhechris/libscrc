@@ -10,41 +10,38 @@
 import sys
 import time
 import random
-import pymodbus
+import threading
 
+from PBoxXML import PBoxXML
 from PboxHttp import PboxHttp
+from PboxMbus import PboxMbus
+
 from ImxLED import ImxLED
-from PbXML import PbXML
 
-def caller(led, readlist, length=1):
-    """Modbus"""
-    msg = 'Code = ' + str(readlist[0]) + ' Addr = %4d' % (readlist[1]) + '  =>  '
-    ret = 0
-    try:
-        ret = pymodbus.read_registers(readlist[0:3], length)
-        msg += str(ret)
-        led.normal()
-        print(msg)
-    except BaseException as err:
-        led.error()
-        print(err)
-        return ret
 
-    return ret
+def thread_http(phttp, pjson):
+    """Http thread."""
+    # ret = -1
+    # while ret == -1:
+    #     ret = phttp.insert(pjson)
+    # print(ret)
+    print('Http Server = %d'%phttp.insert(pjson))
 
-if __name__ == '__main__':
-    LED1 = ImxLED('LED1')
-    LED1.start()
+def main():
+    """Main funciotn."""
+    led1 = ImxLED('LED1')
+    led1.start()
 
-    XML = PbXML()
-    HTTP = PboxHttp(XML.device_name())
-    ret = HTTP.create(XML.items_info())
+    xml = PBoxXML()
+    phttp = PboxHttp(xml.device_name())
+    ret = phttp.create(xml.items_info())
     if ret == -1:
+        print('Connect http server faild.')
         sys.exit()
-    print(pymodbus.new_rtu('/dev/ttymxc1'))
 
-    CMDS = XML.dataitem()
-    print(CMDS)
+    pmodbus = PboxMbus()
+    cmds = xml.dataitem()
+    print(cmds)
 
     # CMDS = [[3, 1, 'D32', 'TEST1'],
     #         [3, 10, 'U16', 'TEST2'],
@@ -55,15 +52,21 @@ if __name__ == '__main__':
     #         [4, 0, 'U32', 'TEST7'],
     #         [4, 0x07D0, 'S32', 'TEST8']]
 
-    DATADICT = {}
-    JSON_DATA = []
+    datadict = {}
+    datajson = []
 
     while True:
-        JSON_DATA.clear()
-        for cmd in CMDS:
-            DATADICT['itemName'] = cmd[3]
-            # DATADICT['value'] = caller(LED1, cmd, 1)[0]
-            DATADICT['value'] = random.randint(-1000, 1000)
-            JSON_DATA.append(DATADICT.copy())
-        HTTP.insert(JSON_DATA)
-        time.sleep(5)
+        datajson.clear()
+        for cmd in cmds:
+            datadict['itemName'] = cmd[3]
+            # datadict['value'] = pmodbus.send(led1, cmd, 1)
+            datadict['value'] = random.randint(-1000, 1000)
+            datajson.append(datadict.copy())
+
+        thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
+        thd.start()
+        time.sleep(2)
+
+
+if __name__ == '__main__':
+    main()

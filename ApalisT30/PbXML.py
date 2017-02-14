@@ -29,7 +29,8 @@ class PbXML:
         for items in self.data.getElementsByTagName('dataItem'):
             if items.hasAttribute("config"):
                 itemlist = items.getAttribute("config").split(';')
-                datalist.append([int(itemlist[1]), int(itemlist[2]), dicts[itemlist[4]]])
+                if items.hasAttribute('n'):
+                    datalist.append([int(itemlist[1]), int(itemlist[2]), dicts[itemlist[4]], items.getAttribute('n')])
         return datalist
 
     def driverinfo(self):
@@ -49,8 +50,31 @@ class PbXML:
                 return items.getAttribute("devicedriver")
         return None
 
+    def items_info(self):
+        """Get Items information."""
+        datalist = []
+        dicts = {}
+        for items in self.data.getElementsByTagName('dataItem'):
+            # dicts.clear()
+            if items.hasAttribute("config"):
+                itemlist = items.getAttribute("config").split(';')
+                dicts['itemType'] = itemlist[4]
+                if items.hasAttribute('n'):
+                    dicts['itemName'] = items.getAttribute('n')
+                datalist.append(dicts.copy())
+        return datalist
+
+    def device_name(self):
+        """Get Device Name for database's table name."""
+        for items in self.data.getElementsByTagName('device'):
+            if items.hasAttribute('n'):
+                return items.getAttribute('n')
+        return None
+
 # if __name__ == "__main__":
-#     XML = PbXML()
-#     print(XML.dataitem())
-#     XML.driverinfo()
-#     print(XML.devicedriver())
+#     XML = PbXML('./config.xml')
+#     # print(XML.dataitem())
+#     # print(XML.driverinfo())
+#     # print(XML.devicedriver())
+#     print(XML.items_info())
+#     print(XML.device_name())

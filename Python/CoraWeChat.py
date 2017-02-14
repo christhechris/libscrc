@@ -22,7 +22,7 @@ import urllib.request
 import urllib.parse
 # pip install requests 2016-09-29
 import requests
-# import xml.dom.minidom
+import xml.dom.minidom
 # import multiprocessing
 # import platform
 

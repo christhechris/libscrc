@@ -12,7 +12,7 @@ import time
 import random
 import threading
 
-from PBoxXML import PBoxXML
+from PboxXML import PboxXML
 from PboxHttp import PboxHttp
 from PboxMbus import PboxMbus
 
@@ -25,14 +25,14 @@ def thread_http(phttp, pjson):
     # while ret == -1:
     #     ret = phttp.insert(pjson)
     # print(ret)
-    print('Http Server = %d'%phttp.insert(pjson))
+    print('Http Server = %d  >> '%phttp.insert(pjson) + time.strftime("%H:%M:%S", time.localtime()))
 
 def main():
     """Main funciotn."""
     led1 = ImxLED('LED1')
     led1.start()
 
-    xml = PBoxXML()
+    xml = PboxXML()
     phttp = PboxHttp(xml.device_name())
     ret = phttp.create(xml.items_info())
     if ret == -1:
@@ -59,13 +59,14 @@ def main():
         datajson.clear()
         for cmd in cmds:
             datadict['itemName'] = cmd[3]
-            # datadict['value'] = pmodbus.send(led1, cmd, 1)
-            datadict['value'] = random.randint(-1000, 1000)
+            #datadict['value'] = pmodbus.send(led1, cmd, 1)
+            print(str(pmodbus.send(led1, cmd, 1)) + ' - ', end='')
+            datadict['value'] = random.randint(0, 999)
             datajson.append(datadict.copy())
-
+        print('')
         thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
         thd.start()
-        time.sleep(2)
+        time.sleep(5)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,7 @@ import subprocess
 from glob import glob
 from PboxXML import PboxXML
 import sysv_ipc
+import imx6_ixora_led as led
 
 def main():
     """Main Function Entry."""
@@ -33,8 +34,8 @@ def main():
                     key = key + 1
                     memory = sysv_ipc.SharedMemory(key, flags=sysv_ipc.IPC_CREAT, size=len(msg))
                     memory.write(msg)
-                    # print(os.system('python3 ' + match + ' &'))
-                    proc = subprocess.Popen(['python3', match, str(key)])
+                    # print(os.system('python ' + match + ' &'))
+                    proc = subprocess.Popen(['python', match, str(key)])
                     process.append(proc)
                     print('process id = %d'%proc.pid)
 
@@ -44,6 +45,7 @@ def main():
             time.sleep(10)
             print('I am master!!!')
         except KeyboardInterrupt:
+            led.clear()
             for proc in process:
                 proc.kill()
             sys.exit()

@@ -20,7 +20,7 @@ from PboxHttp import PboxHttp
 def thread_http(phttp, pjson):
     """Http thread."""
     ret = phttp.insert(pjson)
-    print(time.strftime("%H:%M:%S", time.localtime()), '[modbus tcp]ret = %d'%ret)
+    print(time.strftime("%H:%M:%S", time.localtime()), '[http <modbus tcp>]ret = %d'%ret)
 
 
 def main(key=0):
@@ -29,7 +29,13 @@ def main(key=0):
     memory = sysv_ipc.SharedMemory(key)
     msgdict = json.loads(bytes.decode(memory.read()).strip('\0'))
 
-    pmodbus = PboxTCP('192.168.5.119')
+    pmodbus = PboxTCP(msgdict['config'].split(';')[1])
+    while True:
+        if pmodbus.isopened is True:
+            break
+        else:
+            time.sleep(10)
+
     phttp = PboxHttp(ip=msgdict['Pbox']['CloudInfo'], table_name=msgdict['table_name'])
     phttp.create(msgdict)
 

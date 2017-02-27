@@ -24,7 +24,7 @@ class PboxHttp:
         self.timeout = timeout
         self.createurl = 'http://' + ip + ':8080/WebApi/Create'
         self.inserturl = 'http://' + ip + ':8080/WebApi/Insert'
-        print('Cloud IP Address = %s'%ip)
+        print('[Modbus TCP] Cloud IP Address = %s'%ip)
 
     def __del__(self):
         led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
@@ -36,6 +36,7 @@ class PboxHttp:
         create_data = {}
         create_data['table_name'] = self.table
         create_data['items'] = []
+        print('[Modbus TCP] Cloud Table Name = %s'%self.table)
         for items in items_data['Items']:
             create_data['items'].append({'itemName' : items['itemName'], 'itemType' : items['itemType']})
 

@@ -16,15 +16,24 @@ class PboxTCP:
 
     def __init__(self, ip='127.0.0.1', port=502):
         super(PboxTCP, self).__init__()
-        pymodbus.new_tcp(ip, port)
+        self.isopened = False
+        print('Modbus TCP%s -- %d'%(ip, port))
+        try:
+            pymodbus.new_tcp(ip, port)
+            self.isopened = True
+        except BaseException as err:
+            led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
+            print(err)
 
     def __del__(self):
+        self.isopened = False
         led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
         led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
         pymodbus.free_tcp()
 
     def send(self, readlist, length=1):
         """Send Data to Device."""
+
         try:
             ret = pymodbus.read_registers(readlist[0:3], length)
         except BaseException as err:
@@ -33,8 +42,10 @@ class PboxTCP:
             print(err)
             return -1
         else:
+            print('OK')
             led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
             led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)
         finally:
             pass
         return ret[0]
+

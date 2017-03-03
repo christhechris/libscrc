@@ -17,7 +17,8 @@ class PboxRtu:
     def __init__(self, ttypath='/dev/ttymxc1'):
         super(PboxRtu, self).__init__()
         pymodbus.new_rtu(ttypath)
-        pymodbus.set_timeout(1, 0)
+        # set_timeout(seconds, microseconds = us)
+        pymodbus.set_timeout(0, 500000)
 
     def __del__(self):
         led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
@@ -32,7 +33,7 @@ class PboxRtu:
             led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
             led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
             print(err)
-            return -1
+            return None
         else:
             led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
             led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)

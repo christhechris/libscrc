@@ -46,10 +46,14 @@ def main(key=0):
         for cmd in msgdict['Items']:
             datadict['itemName'] = cmd['itemName']
             datadict['value'] = pmodbus.send(cmd['itemValue'], 1)
+            if datadict['value'] is None:
+                break
             datadict['value'] = random.randint(0, 900)
             datajson.append(datadict.copy())
-        thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
-        thd.start()
+
+        if len(datajson):
+            thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
+            thd.start()
         time.sleep(1)
 
 if __name__ == '__main__':

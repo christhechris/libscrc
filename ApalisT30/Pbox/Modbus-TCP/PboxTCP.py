@@ -20,6 +20,8 @@ class PboxTCP:
         print('Modbus TCP%s -- %d'%(ip, port))
         try:
             pymodbus.new_tcp(ip, port)
+            # set_timeout(seconds, microseconds = us)
+            pymodbus.set_timeout(0, 500000) # default timeout=500msd
             self.isopened = True
         except BaseException as err:
             led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
@@ -40,9 +42,8 @@ class PboxTCP:
             led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
             led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
             print(err)
-            return -1
+            return None
         else:
-            print('OK')
             led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
             led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)
         finally:

@@ -11,8 +11,11 @@ import sys
 import json
 import time
 import random
+from datetime import datetime
+
 import sysv_ipc
 import threading
+
 
 from PboxRtu import PboxRtu
 from PboxHttp import PboxHttp
@@ -36,15 +39,25 @@ def main(key=0):
     datadict = {}
     datajson = []
     while True:
+        stime = datetime.utcnow()
         datajson.clear()
         for cmd in msgdict['Items']:
             datadict['itemName'] = cmd['itemName']
             datadict['value'] = pmodbus.send(cmd['itemValue'], 1)
+            if datadict['value'] is None:
+                break
             datadict['value'] = random.randint(0, 900)
             datajson.append(datadict.copy())
-        thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
-        thd.start()
-        time.sleep(1)
+
+        if len(datajson):
+            thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
+            thd.start()
+        etime = datetime.utcnow()
+
+        try:
+            time.sleep(1 - (etime-stime).seconds - (etime-stime).microseconds/1000000)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     main(int(sys.argv[1]))

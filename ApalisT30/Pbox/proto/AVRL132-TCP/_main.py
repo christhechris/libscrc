@@ -26,8 +26,8 @@ def main():
 
     addr = '192.168.5.100'
 
-    thd = threading.Thread(target=thread_realtime, args=(addr, ))
-    thd.start()
+    # thd = threading.Thread(target=thread_realtime, args=(addr, ))
+    # thd.start()
 
 
     rl132 = PboxRL132('192.168.5.102', 49153)

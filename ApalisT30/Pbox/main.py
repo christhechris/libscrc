@@ -10,22 +10,31 @@
 import os
 import sys
 import time
-import mmap
 import json
+import signal
 import random
 import subprocess
 
 from glob import glob
 from PboxXML import PboxXML
+
 import sysv_ipc
 import imx6_ixora_led as led
 
+def do_exit(sig, stack):
+    """killall python."""
+    led.clear()
+    print('Received signal.SIGTERM in process. Python exit.')
+    raise SystemExit('Exiting')
+
 def main():
     """Main Function Entry."""
+    signal.signal(signal.SIGTERM, do_exit)
+
     process = []
     xml = PboxXML()
     xmllist = xml.get_config()
-    key = random.randint(1000, 9999)
+    key = 5000      # random.randint(1000, 9999)
     for root, dirs, files in os.walk('./'):  # pylint: disable=W0612
         for match in glob(os.path.join(root, '_main.py')):
             for config in xmllist:

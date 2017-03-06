@@ -12,6 +12,7 @@ NM-EJR5A NM-EJR6A RL132
 
 import time
 import threading
+from datetime import datetime
 from PboxRL132TCP import PboxRL132
 
 def thread_realtime(addr):
@@ -19,7 +20,6 @@ def thread_realtime(addr):
     rtdata = PboxRL132(addr, 49153)
     while True:
         print('thread_realtime', rtdata.recv())
-
 
 def main():
     """Main Function Entry."""
@@ -29,11 +29,15 @@ def main():
     # thd = threading.Thread(target=thread_realtime, args=(addr, ))
     # thd.start()
 
-
     rl132 = PboxRL132('192.168.5.102', 49153)
     while True:
+        stime = datetime.utcnow()
         rl132.send()
-        time.sleep(5)
+        etime = datetime.utcnow()
+        try:
+            time.sleep(5 - (etime-stime).seconds - (etime-stime).microseconds/1000000)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     main()

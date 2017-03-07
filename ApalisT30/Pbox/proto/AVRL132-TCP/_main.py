@@ -17,9 +17,16 @@ from PboxRL132TCP import PboxRL132
 
 def thread_realtime(addr):
     """Listion Port=49153 and receive RT data."""
-    rtdata = PboxRL132(addr, 49153)
+    rtdata = PboxRL132()
+    while True:
+        if rtdata.open(addr, 49153) is True:
+            break
+        else:
+            time.sleep(1)
+
     while True:
         print('thread_realtime', rtdata.recv())
+
 
 def main():
     """Main Function Entry."""
@@ -29,11 +36,23 @@ def main():
     # thd = threading.Thread(target=thread_realtime, args=(addr, ))
     # thd.start()
 
-    rl132 = PboxRL132('192.168.5.102', 49153)
+    rl132 = PboxRL132()
+
+    while True:
+        if rl132.open('192.168.5.104', 49153) is True:
+            break
+        else:
+            time.sleep(1)
+
     while True:
         stime = datetime.utcnow()
+        if rl132.isopened is False:
+            time.sleep(1)
+            rl132.open('192.168.5.104', 49153)
+            continue
         rl132.send()
         etime = datetime.utcnow()
+
         try:
             time.sleep(5 - (etime-stime).seconds - (etime-stime).microseconds/1000000)
         except BaseException:

@@ -12,18 +12,37 @@ NM-EJR5A NM-EJR6A RL132
 
 import errno
 import socket
+import struct
 import logging
 import logging.config
 
 class PboxRL132:
     """Pbox NM-EJR5A NM-EJR6A RL132"""
 
-    def __init__(self, addr='192.168.5.102', port=49152, block=True):
+    def __init__(self):
         super(PboxRL132, self).__init__()
-
         logging.config.fileConfig("../../etc/logging.config")
         self.logger = logging.getLogger("AVRL132")
 
+        self.sock = None
+        self.isopened = False
+
+        self.cmdicts = {}
+        self.cmdicts['C1M000'] = self.__c1m000__    # 进行生产管理信息（设备累计）的读出
+        self.cmdicts['C1M000P'] = self.__c1m000p__  # 进行生产管理信息（生产品种）的读出
+        self.cmdicts['C1N000'] = self.__c1n000__    # 进行托盘板信息的读出
+        self.cmdicts['C1Z000'] = self.__c1z000__    # 进行料架信息的读出
+        self.cmdicts['C1R000'] = self.__c1r000__    # 进行转动夹信息的读出 (仅仅AV132)
+
+        self.cmdicts['C2ST'] = self.__c2st__        # 装置状态
+
+    def __del__(self):
+        if self.isopened is True:
+            self.sock.close()
+        self.isopened = False
+
+    def open(self, addr='192.168.5.102', port=49152, block=True):
+        """Open Socket"""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setblocking(block)    # 0 = noBlocking 1 = Blocking
         if block is False:
@@ -35,25 +54,17 @@ class PboxRL132:
             self.sock.connect((addr, port))
             self.isopened = True
         except socket.error as err:
-            self.isopened = False
+            self.close()
             if err.errno != errno.EWOULDBLOCK:
                 self.logger.error(err)
 
         self.logger.debug('IP=%s:%d Blocking=%d', addr, port, block)
+        return self.isopened
 
-        self.cmdicts = {}
-        self.cmdicts['C1M000'] = self.__c1m000__    # 进行生产管理信息（设备累计）的读出
-        self.cmdicts['C1M000P'] = self.__c1m000__   # 进行生产管理信息（生产品种）的读出
-        self.cmdicts['C1N000'] = self.__c1m000__    # 进行托盘板信息的读出
-        self.cmdicts['C1Z000'] = self.__c1m000__    # 进行料架信息的读出
-        self.cmdicts['C1R000'] = self.__c1m000__    # 进行转动夹信息的读出 (仅仅AV132)
-
-        self.cmdicts['C2ST'] = self.__c2st__        # 装置状态
-
-    def __del__(self):
-        if self.isopened is True:
-            self.sock.close()
+    def close(self):
+        """Close Sokcet"""
         self.isopened = False
+        self.sock.close()
 
     def __send_packet__(self, cmd):
         """Socket (TCP) Send."""
@@ -66,22 +77,55 @@ class PboxRL132:
         try:
             self.sock.send(instruct.encode(encoding='UTF-8'))
         except BaseException as err:
+            self.close()
             self.logger.error(err)
             return False
         return True
 
-    def __recv_packet__(self):
+    def __recv_packet__(self, cmd):
         """Socket (TCP) Receive"""
+        dicts = {'cmds' : 'A0', 'data' : '', 'lens':'0'}
+        tuples = ('D0', 'D1', 'A0', 'A2', 'A3', 'A4E00', 'A4E01')
+
+        if self.__send_packet__(cmd) is not True:
+            return None
+
+        if cmd == 'A2':
+            return None
+
         try:
-            msg = self.sock.recv(1024)
+            msg = self.sock.recv(1024).decode(encoding='UTF-8')
         except BaseException as err:
+            self.close()
             self.logger.error(err)
             return None
 
-        return msg.decode(encoding='UTF-8')
+        if len(msg) < 256 + 4 + 3:
+            self.logger.warning('Receive packet length error!')
+            return None
+
+        header = msg[0:256].strip(' ')
+        if header not in tuples:
+            self.logger.warning('Receive packet header[%s] error!', header)
+            return None
+
+        dicts['cmds'] = header
+        # dicts['lens'] = msg[256:260]
+        dicts['lens'] = struct.unpack("l", bytes(msg[256:260], encoding='UTF-8'))[0]
+        dicts['data'] = msg[260:-3]
+
+        # Determine whether the received data length is correct
+        if dicts['cmds'] == 'D0' or dicts['cmds'] == 'D1':
+            if len(dicts['data']) != (dicts['lens']):
+                self.logger.warning('The length of the received data is error!')
+                return None
+
+        return dicts
 
     def recv(self):
-        """Receive data from RL132"""
+        """Receive data from RL132
+        TODO:
+        """
         try:
             msg = self.sock.recv(1024)
         except BaseException as err:
@@ -92,20 +136,11 @@ class PboxRL132:
 
     def send(self, cmd='C1M000'):
         """Send command to device."""
-        dicts = {}
-
-        if self.__send_packet__(cmd) is not True:
+        if cmd not in self.cmdicts:
+            self.logger.error('Command does not support. [%s]!', cmd)
             return None
 
-        data = self.__recv_packet__()
-
-        if len(data) < 256 + 4 + 3:
-            self.logger.warning('Receive packet length error!')
-            return None
-
-        dicts = self.cmdicts[cmd](data)
-
-        return dicts
+        return self.cmdicts[cmd](self.__recv_packet__(cmd))
 
     def __c1m000__(self, msgdata):
         """C1M000 [Response packet format]
@@ -140,18 +175,22 @@ class PboxRL132:
         ES  --->  0000000003
         """
 
-        if msgdata[0:2] != 'D0':
-            self.logger.error('C1M instruct eroor --> %s', msgdata[0:2])
+        if msgdata is None or ((msgdata['cmds'] > 'D0') - (msgdata['cmds'] < 'D0') == -1):
+            self.logger.error('C1M instruct error')
             return None
 
         c1m000dict = {}
-        for item in msgdata[259:-3].splitlines():
+        for item in msgdata['data'].splitlines():
             c1m000dict[item[0:2]] = item[2:]
             self.logger.debug('%s --> %s', item[0:2], item[2:])
 
-        # if self.__send_packet__('A0') is False:
-        #     return None
-        # self.__recv_packet__()
+        while True:
+            data = self.__recv_packet__('A0')
+            if data is None or data['cmds'] == 'A2':
+                break
+            for item in data['data'].splitlines():
+                c1m000dict[item[0:2]] = item[2:]
+                self.logger.debug('%s --> %s', item[0:2], item[2:])
 
         return c1m000dict
 
@@ -163,17 +202,31 @@ class PboxRL132:
             m m   ->02: Error (出错停止) 状态
             msgdata instruct(256Bytes) + datasize(4Byte) + Data(NBytes) + EOF(3Bytes)
         """
-        c1m000dict = {}
-        if msgdata[0:2] != 'D1':
+
+        if msgdata is None or ((msgdata['cmds'] > 'D1') - (msgdata['cmds'] < 'D1') == -1):
+            self.logger.error('C2ST instruct error.')
             return None
 
-        c1m000dict['Status'] = msgdata[259:-3]
+        c2stdict = {}
+        c2stdict['Status'] = msgdata['data']
         if self.__send_packet__('A2') is False:
             return None
 
-        self.logger.debug('C2ST --> %s', c1m000dict)
-        return c1m000dict
+        self.logger.debug('C2ST --> %s', c2stdict)
+        return c2stdict
 
+    def __c1m000p__(self, msgdata):
+        """进行生产管理信息（生产品种）的读出"""
+        self.logger.debug('C1M000P --> %s', msgdata)
 
+    def __c1n000__(self, msgdata):
+        """进行托盘板信息的读出"""
+        self.logger.debug('C1N000 --> %s', msgdata)
 
+    def __c1z000__(self, msgdata):
+        """进行料架信息的读出"""
+        self.logger.debug('C1Z000 --> %s', msgdata)
 
+    def __c1r000__(self, msgdata):
+        """进行转动夹信息的读出 (仅仅AV132)"""
+        self.logger.debug('C1R000 --> %s', msgdata)

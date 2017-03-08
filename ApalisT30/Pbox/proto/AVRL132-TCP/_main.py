@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:UTF-8 -*-
 """
 NM-EJA5A NM-EJA6A AV132
 NM-EJR5A NM-EJR6A RL132

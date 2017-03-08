@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:UTF-8 -*-
 """ Main"""
 # !/usr/bin/python
 # Python:   3.5.2

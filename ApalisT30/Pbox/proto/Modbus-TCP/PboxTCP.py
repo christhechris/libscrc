@@ -1,11 +1,12 @@
-# -*- coding:utf-8 -*-
-""" Pbox Modbus RTU"""
+# -*- coding:UTF-8 -*-
+""" Pbox Modbus TCP"""
 # !/usr/bin/python
 # Python:   3.5.2
 # Platform: Windows
 # Author:   Heyn
-# Program:  Modbus RTU
+# Program:  Modbus TCP
 # History:  2017/02/14 V1.0.0[Heyn]
+#           2017/03/08 V1.0.1[Heyn] Send return string.
 
 import pymodbus
 import imx6_ixora_led as led
@@ -17,11 +18,11 @@ class PboxTCP:
     def __init__(self, ip='127.0.0.1', port=502):
         super(PboxTCP, self).__init__()
         self.isopened = False
-        print('Modbus TCP%s -- %d'%(ip, port))
+        print('Modbus TCP%s -- %d' % (ip, port))
         try:
             pymodbus.new_tcp(ip, port)
             # set_timeout(seconds, microseconds = us)
-            pymodbus.set_timeout(0, 500000) # default timeout=500msd
+            pymodbus.set_timeout(0, 500000)  # default timeout=500msd
             self.isopened = True
         except BaseException as err:
             led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
@@ -35,7 +36,6 @@ class PboxTCP:
 
     def send(self, readlist, length=1):
         """Send Data to Device."""
-
         try:
             ret = pymodbus.read_registers(readlist[0:3], length)
         except BaseException as err:
@@ -48,5 +48,7 @@ class PboxTCP:
             led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)
         finally:
             pass
-        return ret[0]
 
+        # When the length is greater than 1, it is a string.
+        # And each hexadecimal number into ASCII code
+        return ret[0] if length == 1 else ''.join((lambda val: [chr(i) for i in val])(ret)).strip('\x00')

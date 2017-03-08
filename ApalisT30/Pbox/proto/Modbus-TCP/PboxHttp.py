@@ -33,12 +33,12 @@ class PboxHttp:
     def create(self, items_data):
         """Create Table Message."""
         # create_data = {'table_name': self.table, 'items' : items_data}
-        create_data = {}
-        create_data['table_name'] = self.table
-        create_data['items'] = []
+        create_data = dict(table_name=self.table, items=[])
+
         print('[Modbus TCP] Cloud Table Name = %s'%self.table)
-        for items in items_data['Items']:
-            create_data['items'].append({'itemName' : items['itemName'], 'itemType' : items['itemType']})
+        for items in items_data.get('Items'):
+            create_data['items'].append(dict(itemName=items.get('itemName'),\
+                                             itemType=items.get('itemType')))
 
         try:
             ret = self.sess.post(self.createurl, data=json.dumps(create_data), timeout=self.timeout)

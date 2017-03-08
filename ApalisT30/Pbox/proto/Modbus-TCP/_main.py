@@ -1,4 +1,4 @@
-# -*- coding:utf8 -*-
+# -*- coding:UTF-8 -*-
 """ Main"""
 # !/usr/bin/python
 # Python:   3.5.2
@@ -20,8 +20,9 @@ from PboxHttp import PboxHttp
 def thread_http(phttp, pjson):
     """Http thread."""
     ret = phttp.insert(pjson)
-    print(time.strftime("%H:%M:%S", time.localtime()), '[http <modbus tcp>]ret = %d'%ret)
 
+    print(time.strftime("%H:%M:%S", time.localtime()), '[http <modbus tcp>]ret = %d'%ret)
+    print(pjson)
 
 def main(key=0):
     """Main Function Entry."""
@@ -36,19 +37,19 @@ def main(key=0):
         else:
             time.sleep(10)
 
-    phttp = PboxHttp(ip=msgdict['Pbox']['CloudInfo'], table_name=msgdict['table_name'])
+    phttp = PboxHttp(ip=msgdict.get('Pbox').get('CloudInfo'), table_name=msgdict.get('table_name'))
     phttp.create(msgdict)
 
     datadict = {}
     datajson = []
     while True:
         datajson.clear()
-        for cmd in msgdict['Items']:
-            datadict['itemName'] = cmd['itemName']
-            datadict['value'] = pmodbus.send(cmd['itemValue'], 1)
+        for cmd in msgdict.get('Items'):
+            datadict.update(itemName=cmd.get('itemName'))
+            datadict['value'] = pmodbus.send(cmd.get('itemValue'), cmd.get('itemSize', 1))
             if datadict['value'] is None:
                 break
-            datadict['value'] = random.randint(0, 900)
+            # datadict['value'] = random.randint(0, 900)
             datajson.append(datadict.copy())
 
         if len(datajson):

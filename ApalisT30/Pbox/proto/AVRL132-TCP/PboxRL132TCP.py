@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:UTF-8 -*-
 """
 NM-EJA5A NM-EJA6A AV132
 NM-EJR5A NM-EJR6A RL132
@@ -27,14 +27,12 @@ class PboxRL132:
         self.sock = None
         self.isopened = False
 
-        self.cmdicts = {}
-        self.cmdicts['C1M000'] = self.__c1m000__    # 进行生产管理信息（设备累计）的读出
-        self.cmdicts['C1M000P'] = self.__c1m000p__  # 进行生产管理信息（生产品种）的读出
-        self.cmdicts['C1N000'] = self.__c1n000__    # 进行托盘板信息的读出
-        self.cmdicts['C1Z000'] = self.__c1z000__    # 进行料架信息的读出
-        self.cmdicts['C1R000'] = self.__c1r000__    # 进行转动夹信息的读出 (仅仅AV132)
-
-        self.cmdicts['C2ST'] = self.__c2st__        # 装置状态
+        self.cmdicts = dict(C1M000=self.__c1m000__, \
+                            C1M000P=self.__c1m000p__, \
+                            C1N000=self.__c1n000__, \
+                            C1Z000=self.__c1z000__, \
+                            C1R000=self.__c1r000__, \
+                            C2ST=self.__c2st__)
 
     def __del__(self):
         if self.isopened is True:
@@ -84,7 +82,7 @@ class PboxRL132:
 
     def __recv_packet__(self, cmd):
         """Socket (TCP) Receive"""
-        dicts = {'cmds' : 'A0', 'data' : '', 'lens':'0'}
+        dicts = dict(cmds='A0', data='', lens=0)
         tuples = ('D0', 'D1', 'A0', 'A2', 'A3', 'A4E00', 'A4E01')
 
         if self.__send_packet__(cmd) is not True:
@@ -109,14 +107,13 @@ class PboxRL132:
             self.logger.warning('Receive packet header[%s] error!', header)
             return None
 
-        dicts['cmds'] = header
-        # dicts['lens'] = msg[256:260]
-        dicts['lens'] = struct.unpack("l", bytes(msg[256:260], encoding='UTF-8'))[0]
-        dicts['data'] = msg[260:-3]
+        dicts.update(cmds=header, \
+                     data=msg[260:-3],\
+                     lens=struct.unpack("l", bytes(msg[256:260], encoding='UTF-8'))[0])
 
         # Determine whether the received data length is correct
-        if dicts['cmds'] == 'D0' or dicts['cmds'] == 'D1':
-            if len(dicts['data']) != (dicts['lens']):
+        if any(dicts.get('cmds') == t for t in ('D0', 'D1')):
+            if len(dicts.get('data')) != dicts.get('lens'):
                 self.logger.warning('The length of the received data is error!')
                 return None
 
@@ -136,11 +133,12 @@ class PboxRL132:
 
     def send(self, cmd='C1M000'):
         """Send command to device."""
-        if cmd not in self.cmdicts:
+
+        if cmd not in self.cmdicts.keys():
             self.logger.error('Command does not support. [%s]!', cmd)
             return None
 
-        return self.cmdicts[cmd](self.__recv_packet__(cmd))
+        return self.cmdicts.get(cmd)(self.__recv_packet__(cmd))
 
     def __c1m000__(self, msgdata):
         """C1M000 [Response packet format]
@@ -175,20 +173,20 @@ class PboxRL132:
         ES  --->  0000000003
         """
 
-        if msgdata is None or ((msgdata['cmds'] > 'D0') - (msgdata['cmds'] < 'D0') == -1):
+        if not msgdata  or ((msgdata.get('cmds') > 'D0') - (msgdata.get('cmds') < 'D0') == -1):
             self.logger.error('C1M instruct error')
             return None
 
         c1m000dict = {}
-        for item in msgdata['data'].splitlines():
+        for item in msgdata.get('data').splitlines():
             c1m000dict[item[0:2]] = item[2:]
             self.logger.debug('%s --> %s', item[0:2], item[2:])
 
         while True:
             data = self.__recv_packet__('A0')
-            if data is None or data['cmds'] == 'A2':
+            if data is None or data.get('cmds') == 'A2':
                 break
-            for item in data['data'].splitlines():
+            for item in data.get('data').splitlines():
                 c1m000dict[item[0:2]] = item[2:]
                 self.logger.debug('%s --> %s', item[0:2], item[2:])
 
@@ -207,8 +205,7 @@ class PboxRL132:
             self.logger.error('C2ST instruct error.')
             return None
 
-        c2stdict = {}
-        c2stdict['Status'] = msgdata['data']
+        c2stdict = dict(Status=msgdata['data'])
         if self.__send_packet__('A2') is False:
             return None
 

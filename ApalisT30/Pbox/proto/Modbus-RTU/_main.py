@@ -1,4 +1,4 @@
-# -*- coding:utf8 -*-
+# -*- coding:UTF-8 -*-
 """ Main"""
 # !/usr/bin/python
 # Python:   3.5.2
@@ -33,7 +33,7 @@ def main(key=0):
     msgdict = json.loads(bytes.decode(memory.read()).strip('\0'))
 
     pmodbus = PboxRtu()
-    phttp = PboxHttp(ip=msgdict['Pbox']['CloudInfo'], table_name=msgdict['table_name'])
+    phttp = PboxHttp(ip=msgdict.get('Pbox').get('CloudInfo'), table_name=msgdict.get('table_name'))
     phttp.create(msgdict)
 
     datadict = {}
@@ -41,11 +41,12 @@ def main(key=0):
     while True:
         stime = datetime.utcnow()
         datajson.clear()
-        for cmd in msgdict['Items']:
-            datadict['itemName'] = cmd['itemName']
-            datadict['value'] = pmodbus.send(cmd['itemValue'], 1)
+        for cmd in msgdict.get('Items'):
+            datadict.update(itemName=cmd.get('itemName'))
+            datadict['value'] = pmodbus.send(cmd.get('itemValue'), cmd.get('itemSize', 1))
             if datadict['value'] is None:
                 break
+
             datadict['value'] = random.randint(0, 900)
             datajson.append(datadict.copy())
 

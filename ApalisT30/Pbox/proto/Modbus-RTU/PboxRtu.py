@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:UTF-8 -*-
 """ Pbox Modbus RTU"""
 # !/usr/bin/python
 # Python:   3.5.2
@@ -6,6 +6,7 @@
 # Author:   Heyn
 # Program:  Modbus RTU
 # History:  2017/02/14 V1.0.0[Heyn]
+#           2017/03/08 V1.0.1[Heyn] Send return string.
 
 import pymodbus
 import imx6_ixora_led as led
@@ -39,4 +40,6 @@ class PboxRtu:
             led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)
         finally:
             pass
-        return ret[0]
+        # When the length is greater than 1, it is a string.
+        # And each hexadecimal number into ASCII code
+        return ret[0] if length == 1 else ''.join((lambda val: [chr(i) for i in val])(ret)).strip('\x00')

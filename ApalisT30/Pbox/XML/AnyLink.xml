@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <AnyLink>
   <BasicInfo>
-    <HardwareModel>ss</HardwareModel>
-    <AgentVersion>V2.1.3</AgentVersion>
-    <SoftVersion>DA-V3.3.16</SoftVersion>
-    <SerialNumber>1201271</SerialNumber>
+    <HardwareModel>4-170224</HardwareModel>
+    <AgentVersion>****</AgentVersion>
+    <SoftVersion>20170224</SoftVersion>
+    <SerialNumber>*******</SerialNumber>
   </BasicInfo>
   <ZigbeeInfo>
     <Type>0</Type>
@@ -32,7 +32,8 @@
   <NetworkInfo muti="NO" hostname="id1271">
     <Mode>gateway</Mode>
     <Model>simcom</Model>
-    <WAN dhcp="NO" mask="255.255.255.0" gateway="192.168.5.1" dns="114.114.114.114" ip="192.168.5.126"/>
+	<ServiceType>DianXin</ServiceType>
+    <WAN dhcp="NO" mask="255.255.255.0" gateway="192.168.5.1" dns="8.8.8.8" ip="192.168.5.200"/>
     <LAN dhcp="NO" mask="255.255.255.0" gateway="192.168.100.1" dns="114.114.114.114" ip="192.168.100.204"/>
   </NetworkInfo>
   <VPN display="YES"/>

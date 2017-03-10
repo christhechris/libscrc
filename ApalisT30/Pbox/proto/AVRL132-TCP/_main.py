@@ -10,10 +10,22 @@ NM-EJR5A NM-EJR6A RL132
 # Program:
 # History:  2017/03/03 V1.0.0[Heyn]
 
-import time
+import json
+import sys
 import threading
+import time
 from datetime import datetime
+
+import sysv_ipc
+from PboxHttp import PboxHttp
 from PboxRL132TCP import PboxRL132
+
+def thread_http(phttp, pjson):
+    """Http thread."""
+    ret = phttp.insert(pjson)
+
+    print(time.strftime("%H:%M:%S", time.localtime()), '[http <modbus tcp>]ret = %d'%ret)
+    # print(pjson)
 
 def thread_realtime(addr):
     """Listion Port=49153 and receive RT data."""
@@ -28,18 +40,26 @@ def thread_realtime(addr):
         print('thread_realtime', rtdata.recv())
 
 
-def main():
+def main(key=0):
     """Main Function Entry."""
 
-    addr = '192.168.5.100'
+    msgdict = {}
+    memory = sysv_ipc.SharedMemory(key)
+    msgdict = json.loads(bytes.decode(memory.read()).strip('\0'))
 
+
+    addr = msgdict['config'].split(';')[1]
+
+    phttp = PboxHttp(ip=msgdict.get('Pbox').get('CloudInfo'), table_name=msgdict.get('table_name'))
+    print(phttp.create(msgdict))
+    # print(addr)
     # thd = threading.Thread(target=thread_realtime, args=(addr, ))
     # thd.start()
 
     rl132 = PboxRL132()
 
     while True:
-        if rl132.open('192.168.5.104', 49153) is True:
+        if rl132.open(addr, 49153) is True:
             break
         else:
             time.sleep(1)
@@ -48,9 +68,14 @@ def main():
         stime = datetime.utcnow()
         if rl132.isopened is False:
             time.sleep(1)
-            rl132.open('192.168.5.104', 49153)
+            rl132.open(addr, 49153)
             continue
-        rl132.send()
+
+        datajson = rl132.send('C1M000', msgdict.get('Items'))
+
+        if len(datajson):
+            thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))
+            thd.start()
         etime = datetime.utcnow()
 
         try:
@@ -59,4 +84,4 @@ def main():
             pass
 
 if __name__ == '__main__':
-    main()
+    main(int(sys.argv[1]))

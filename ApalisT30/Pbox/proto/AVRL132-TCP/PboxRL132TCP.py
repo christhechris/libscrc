@@ -16,16 +16,20 @@ import struct
 import logging
 import logging.config
 
+import imx6_ixora_led as led
+
 class PboxRL132:
     """Pbox NM-EJR5A NM-EJR6A RL132"""
 
     def __init__(self):
         super(PboxRL132, self).__init__()
-        logging.config.fileConfig("../../etc/logging.config")
-        self.logger = logging.getLogger("AVRL132")
 
         self.sock = None
         self.isopened = False
+
+        logging.config.fileConfig("/home/root/Pbox/etc/logging.config")
+        self.logger = logging.getLogger("AVRL132")
+
 
         self.cmdicts = dict(C1M000=self.__c1m000__, \
                             C1M000P=self.__c1m000p__, \
@@ -51,6 +55,9 @@ class PboxRL132:
         try:
             self.sock.connect((addr, port))
             self.isopened = True
+            led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
+            led.ioctl(led.IXORA_LED4, led.GREEN, led.HIGH)
+
         except socket.error as err:
             self.close()
             if err.errno != errno.EWOULDBLOCK:
@@ -63,6 +70,8 @@ class PboxRL132:
         """Close Sokcet"""
         self.isopened = False
         self.sock.close()
+        led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
+        led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
 
     def __send_packet__(self, cmd):
         """Socket (TCP) Send."""
@@ -131,16 +140,16 @@ class PboxRL132:
 
         return msg.decode(encoding='UTF-8')
 
-    def send(self, cmd='C1M000'):
+    def send(self, cmd, itemslist):
         """Send command to device."""
 
         if cmd not in self.cmdicts.keys():
             self.logger.error('Command does not support. [%s]!', cmd)
             return None
 
-        return self.cmdicts.get(cmd)(self.__recv_packet__(cmd))
+        return self.cmdicts.get(cmd)(self.__recv_packet__(cmd), itemslist)
 
-    def __c1m000__(self, msgdata):
+    def __c1m000__(self, msgdata, itemslist):
         """C1M000 [Response packet format]
         进行生产管理信息（设备累计）的读出
         C1M000 -> 读出后，设备内的生产管理信息（设备累计的运转信息）不会被清除。
@@ -177,20 +186,51 @@ class PboxRL132:
             self.logger.error('C1M instruct error')
             return None
 
-        c1m000dict = {}
+        # namelist = []
+        # for cmd in itemslist:
+        #     if 'STRING' in cmd.get('itemType'):
+        #         continue
+        #     else:
+        #         namelist.append(cmd.get('itemName'))
+
+        c1m000list = []
+        c1m000dict = dict(itemName='', value='')
         for item in msgdata.get('data').splitlines():
-            c1m000dict[item[0:2]] = item[2:]
-            self.logger.debug('%s --> %s', item[0:2], item[2:])
+            if item[0:2] == '*':
+                continue
+            for cmd in itemslist:
+                if item[0:2] in cmd.get('itemName'):
+                    c1m000dict.update(itemName=cmd.get('itemName'))
+                    if 'STRING' in cmd.get('itemType'):
+                        c1m000dict.update(value=item[2:])
+                    else:
+                        c1m000dict.update(value=int(item[2:]))
+
+                    c1m000list.append(c1m000dict.copy())
+                    break
+
+            # self.logger.debug('%s --> %s', item[0:2], item[2:])
 
         while True:
             data = self.__recv_packet__('A0')
             if data is None or data.get('cmds') == 'A2':
                 break
             for item in data.get('data').splitlines():
-                c1m000dict[item[0:2]] = item[2:]
-                self.logger.debug('%s --> %s', item[0:2], item[2:])
+                if item[0:2] == '*':
+                    continue
+                for cmd in itemslist:
+                    if item[0:2] in cmd.get('itemName'):
+                        c1m000dict.update(itemName=cmd.get('itemName'))
+                        if 'STRING' in cmd.get('itemType'):
+                            c1m000dict.update(value=item[2:])
+                        else:
+                            c1m000dict.update(value=int(item[2:]))
 
-        return c1m000dict
+                        c1m000list.append(c1m000dict.copy())
+                        break
+                # self.logger.debug('%s --> %s', item[0:2], item[2:])
+
+        return c1m000list
 
     def __c2st__(self, msgdata):
         """ 取得装置状态(使用的端口1)  m m n

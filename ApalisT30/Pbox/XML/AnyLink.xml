@@ -32,7 +32,7 @@
   <NetworkInfo muti="NO" hostname="id1271">
     <Mode>gateway</Mode>
     <Model>simcom</Model>
-	<ServiceType>DianXin</ServiceType>
+    <ServiceType>DianXin</ServiceType>
     <WAN dhcp="NO" mask="255.255.255.0" gateway="192.168.5.1" dns="8.8.8.8" ip="192.168.5.200"/>
     <LAN dhcp="NO" mask="255.255.255.0" gateway="192.168.100.1" dns="114.114.114.114" ip="192.168.100.204"/>
   </NetworkInfo>
@@ -48,7 +48,9 @@
     <W_STRONG>0</W_STRONG>
     <W_NETMASK>255.255.255.0</W_NETMASK>
   </Wifi>
-  <CloudInfo><Address>47.93.79.77</Address></CloudInfo>
+  <CloudInfo>
+    <Address>47.93.79.77</Address>
+  </CloudInfo>
   <TimeZoneInfo>
     <TimeZone>UTC</TimeZone>
   </TimeZoneInfo>

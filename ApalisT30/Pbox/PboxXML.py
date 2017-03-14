@@ -7,6 +7,7 @@
 # Program:  PBox XML
 # History:  2017/02/20 V1.0.0[Heyn]
 #           2017/03/08 V1.0.1[Heyn] New get_config() return values Dict->Items->itemSize
+#           2017/03/14 V1.0.1[Heyn] BOOLEAN->BOOL int32_t->INT32 int16_t->INT16
 
 import xml.etree.ElementTree as PBET
 
@@ -47,20 +48,21 @@ class PboxXML:
                                Items=[],\
                                Pbox='')
 
-            dicts = {'BOOLEAN': 'B08', 'BYTE': 'B08', 'int16_t': 'S16', 'STRING' : 'S16',
-                     'int32_t': 'S32', 'DOUBLE': 'D32', 'WORD': 'S32', 'FLOAT': 'F16'}
+            dicts = {'BOOL': 'B08', 'BYTE': 'B08', 'INT16': 'S16', 'STRING' : 'S16',
+                     'INT32': 'S32', 'DOUBLE': 'D32', 'WORD': 'S32', 'FLOAT': 'F16'}
 
-            itemdict = dict(itemName='DT0', itemType='int16_t', itemSize=1, itemValue=[3, 0, 'S16'])
+            itemdict = dict(itemName='DT0', itemType='INT16', itemSize=1, itemValue=[3, 0, 'S16'])
 
             for items in child.iter('dataItem'):
                 itemlist = items.attrib['config'].split(';')
                 itemdict.update(itemName=items.attrib['n'])
-                itemdict.update(itemType=itemlist[4])
-
+                # All string lengths are changed to 40  [2017/03/14]
                 if 'STRING' in itemlist[4]:
+                    itemdict.update(itemType='STRING40')
                     itemdict.update(itemSize=int(itemlist[4][-2:]))
                     itemlist[4] = 'STRING'
                 else:
+                    itemdict.update(itemType=itemlist[4])
                     itemdict.update(itemSize=1)
 
                 # itemdict['itemValue'] = [function code, register address, data type]

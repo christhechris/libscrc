@@ -7,6 +7,7 @@
 # Program:  Http.
 # History:  2017/01/18 V1.0.0[Heyn]
 #           2017/02/14 V1.0.1[Heyn] BaseException
+#           2017/03/14 V1.0.2[Heyn] Cloud server exception handling
 
 import time
 import json
@@ -26,7 +27,6 @@ class PboxHttp:
         self.inserturl = 'http://' + ip + ':8080/WebApi/Insert'
         print('[Modbus RTU] Cloud IP Address = %s'%ip)
 
-
     def __del__(self):
         led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
         led.ioctl(led.IXORA_LED5, led.RED, led.LOW)
@@ -34,8 +34,7 @@ class PboxHttp:
     def create(self, items_data):
         """Create Table Message."""
         # create_data = {'table_name': self.table, 'items' : items_data}
-
-        create_data = dict(table_name=self.table, items=[])
+        create_data = dict(table_name=self.table, delFlg=0, items=[])
 
         print('[Modbus RTU] Cloud Table Name = %s'%self.table)
 
@@ -44,12 +43,18 @@ class PboxHttp:
                                              itemType=items.get('itemType')))
         try:
             ret = self.sess.post(self.createurl, data=json.dumps(create_data), timeout=self.timeout)
+            val = int(ret.text)
         except BaseException:
+            print(ret.text)
             led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
             return -1
         else:
             led.ioctl(led.IXORA_LED5, led.GREEN, led.HIGH)
-        return int(ret.text)
+
+        if val == -1:
+            led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
+            led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
+        return val
 
     def insert(self, items_data):
         """
@@ -63,11 +68,18 @@ class PboxHttp:
 
         try:
             ret = self.sess.post(self.inserturl, data=json.dumps(insert_dict), timeout=self.timeout)
+            val = int(ret.text)
         except BaseException:
+            print(ret.text)
             led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
             led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
             return -1
         else:
             led.ioctl(led.IXORA_LED5, led.RED, led.LOW)
             led.ioctl(led.IXORA_LED5, led.GREEN, led.HIGH)
-        return int(ret.text)
+
+        if val == -1:
+            led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
+            led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
+
+        return val

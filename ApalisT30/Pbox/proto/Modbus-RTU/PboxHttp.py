@@ -45,7 +45,6 @@ class PboxHttp:
             ret = self.sess.post(self.createurl, data=json.dumps(create_data), timeout=self.timeout)
             val = int(ret.text)
         except BaseException:
-            print(ret.text)
             led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
             return -1
         else:
@@ -70,7 +69,6 @@ class PboxHttp:
             ret = self.sess.post(self.inserturl, data=json.dumps(insert_dict), timeout=self.timeout)
             val = int(ret.text)
         except BaseException:
-            print(ret.text)
             led.ioctl(led.IXORA_LED5, led.GREEN, led.LOW)
             led.ioctl(led.IXORA_LED5, led.RED, led.HIGH)
             return -1

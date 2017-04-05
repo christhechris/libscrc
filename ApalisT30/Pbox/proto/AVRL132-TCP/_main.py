@@ -31,13 +31,13 @@ def thread_realtime(addr):
     """Listion Port=49153 and receive RT data."""
     rtdata = PboxRL132()
     while True:
-        if rtdata.open(addr, 49153) is True:
+        if rtdata.connect(addr, 49153) is True:
             break
         else:
             time.sleep(1)
 
     while True:
-        print('thread_realtime', rtdata.recv())
+        return
 
 
 def main(key=0):
@@ -59,7 +59,7 @@ def main(key=0):
     rl132 = PboxRL132()
 
     while True:
-        if rl132.open(addr, 49153) is True:
+        if rl132.connect(addr, 49152) is True:
             break
         else:
             time.sleep(1)
@@ -68,10 +68,11 @@ def main(key=0):
         stime = datetime.utcnow()
         if rl132.isopened is False:
             time.sleep(1)
-            rl132.open(addr, 49153)
+            rl132.connect(addr, 49152)
             continue
 
-        datajson = rl132.send('C1M000', msgdict.get('Items'))
+        datajson = rl132.getdata('C1M000')
+        rl132.getdata('A0')
 
         if len(datajson):
             thd = threading.Thread(target=thread_http, args=(phttp, datajson, ))

@@ -47,9 +47,10 @@ def main(key=0):
         for cmd in msgdict.get('Items'):
             datadict.update(itemName=cmd.get('itemName'))
             datadict['value'] = pmodbus.send(cmd.get('itemValue'), cmd.get('itemSize', 1))
-            # if datadict['value'] is None:
-            #     break
-            datadict['value'] = random.randint(0, 900)
+            if datadict['value'] is None:
+                datajson.clear()
+                break
+            # datadict['value'] = random.randint(0, 900)
             datajson.append(datadict.copy())
 
         if len(datajson):

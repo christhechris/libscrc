@@ -11,6 +11,7 @@
 
 import time
 import json
+import uuid
 import requests
 
 import imx6_ixora_led as led
@@ -21,7 +22,7 @@ class PboxHttp:
     def __init__(self, ip='127.0.0.1', table_name='default', timeout=3):
         super(PboxHttp, self).__init__()
         self.sess = requests.session()
-        self.table = table_name
+        self.table = table_name + str(uuid.UUID(int=uuid.getnode()).hex[-12:]).upper()
         self.timeout = timeout
         self.createurl = 'http://' + ip + ':8080/WebApi/Create'
         self.inserturl = 'http://' + ip + ':8080/WebApi/Insert'

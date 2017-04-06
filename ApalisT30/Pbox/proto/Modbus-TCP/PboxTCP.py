@@ -18,11 +18,11 @@ class PboxTCP:
     def __init__(self, ip='127.0.0.1', port=502):
         super(PboxTCP, self).__init__()
         self.isopened = False
-        print('Modbus TCP%s -- %d' % (ip, port))
+        print('[Modbus TCP] %s -- %d' % (ip, port))
         try:
             pymodbus.new_tcp(ip, port)
             # set_timeout(seconds, microseconds = us)
-            pymodbus.set_timeout(0, 500000)  # default timeout=500msd
+            pymodbus.set_timeout(0, 3000000)  # default timeout=3s
             self.isopened = True
         except BaseException as err:
             led.ioctl(led.IXORA_LED4, led.RED, led.HIGH)
@@ -32,6 +32,11 @@ class PboxTCP:
         self.isopened = False
         led.ioctl(led.IXORA_LED4, led.GREEN, led.LOW)
         led.ioctl(led.IXORA_LED4, led.RED, led.LOW)
+        pymodbus.free_tcp()
+
+    def close(self):
+        """Close Socket."""
+        self.isopened = False
         pymodbus.free_tcp()
 
     def send(self, readlist, length=1):

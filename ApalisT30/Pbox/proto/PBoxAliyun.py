@@ -9,12 +9,17 @@
 #           2017/02/14 V1.0.1 [Heyn] BaseException
 #           2017/03/14 V1.0.2 [Heyn] Cloud server exception handling
 #           2017/04/08 V1.0.3 [Heyn] Redesign PBoxAliyun class functions.
+#           2017/04/10 V1.0.4 [Heyn] Bug fixe import imx6_ixora_led as led
+
 # Linux or ARM Platform: You should have requests package.
 
 import sys
 import time
 import json
 import requests
+
+if sys.platform == 'linux':
+    import imx6_ixora_led as led
 
 class PBoxAliyun:
     """Pbox Aliyun Class"""
@@ -27,8 +32,6 @@ class PBoxAliyun:
         self.inserturl = 'http://' + ip + ':8080/WebApi/Insert'
 
         self.platform = sys.platform
-        if self.platform == 'linux':
-            import imx6_ixora_led as led
 
         print('[PboxAliyun] IP Address = %s'%ip)
         self.sess = requests.session()

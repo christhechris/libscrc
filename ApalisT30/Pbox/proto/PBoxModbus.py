@@ -8,12 +8,16 @@
 # History:  2017/02/14 V1.0.0 [Heyn]
 #           2017/03/08 V1.0.1 [Heyn] Send return string.
 #           2017/04/07 V1.0.2 [Heyn] Redesign PBoxModbus class functions.
+#           2017/04/10 V1.0.3 [Heyn] Bug fixe import imx6_ixora_led as led
 
 # Windows(X86) Platform: You should have modbus.dll and pymodbus.pyd
 # Linux or ARM Platform: You should have modbus.so  and pymodbus.cpython-35m-arm-linux-gnueabihf.so
 
 import sys
 import pymodbus
+
+if sys.platform == 'linux':
+    import imx6_ixora_led as led
 
 class PBoxModbus:
     """Pbox Modbus Class"""
@@ -22,8 +26,6 @@ class PBoxModbus:
         super(PBoxModbus, self).__init__()
         self.isopened = False
         self.platform = sys.platform
-        if self.platform == 'linux':
-            import imx6_ixora_led as led
 
     def __del__(self):
         self.isopened = False

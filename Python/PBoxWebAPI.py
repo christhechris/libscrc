@@ -5,8 +5,9 @@
 # Platform: Windows/ARMv7/Linux
 # Author:   Heyn (heyunhuan@gmail.com)
 # Program:  PBox WebMc API.
-# History:  2017/07/27 V1.0 [Heyn]
-#
+# History:  2017-07-27 V1.0 [Heyn]
+#           2017-08-01 V1.1 [Heyn] New support https <verify=False>
+
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -45,10 +46,11 @@ def msg_register(method, cgi):
             payload = func(self, *args, **kwargs)
             header = {'Content-Type':'application/x-www-form-urlencoded'}
             if payload is not False and method == 'POST':
-                ret = self.sess.post(self.url + cgi, data=payload,
-                                     headers=header, timeout=5)
+                # 2017-08-01 for https verify = False
+                ret = self.sess.post(self.url + cgi, data=payload, headers=header, timeout=5, verify=False)
             elif payload is not False and method == 'GET':
-                ret = self.sess.get(self.url + cgi, headers=header, timeout=3)
+                # 2017-08-01 for https verify = False
+                ret = self.sess.get(self.url + cgi, headers=header, timeout=3, verify=False)
 
             if 'Response [200]' in str(ret) and 'SUCCESS' in ret.text:
                 return 'SUCCESS'
@@ -71,15 +73,16 @@ def print_pretty(title):
             table.padding_width = 1
             for item in func(*args, **kwargs):
                 table.add_row(item)
-            print(table)
+            return table
         return wrapper
     return decorator
 
 
 class PBoxWebAPI:
     """PBox WebMc API Class."""
-    def __init__(self, url='http://192.168.3.111', debugLevel=logging.INFO):
+    def __init__(self, url='http://192.168.3.111', debugLevel=logging.ERROR):
         self.url = url + '/cgi-bin/'
+        requests.packages.urllib3.disable_warnings()    # 2017-08-01 for https verify = False
         self.sess = requests.session()
         self.token = '200'
         self.username = self.password = self.passwordmd5 = 'admin'
@@ -177,15 +180,15 @@ class PBoxWebAPI:
     @print_pretty(['ItemName', 'AliasName', 'Frequency', 'Slave ID', 'Function Code', 'Slave Address','Rate', 'TYPE', 'MQTT', 'B/L Endian', 'R/W', 'Result'])
     def newitems(self, num):
         """PBox Insert Items."""
-        alphabet = string.ascii_letters + string.digits
+        alphabet = string.ascii_letters #+ string.digits
         payload = []
         for index in range(0, num):
             itemtype = ['BOOL', 'BYTE', 'DWORD', 'WORD', 'FLOAT', 'DOUBLE', 'INT16', 'INT32', 'STRING'+str(random.randint(1, 20)*2)]
 
-            rtu = [random.randint(0, 255),  # Slave ID
+            rtu = [random.randint(0, 247),  # Slave ID
                    random.randint(1, 5),    # Function Code
                    random.randint(0, 2147483647),   # Slave Address
-                   random.randint(0, 1),    # Rate
+                   1,    # Rate
                    random.choice(itemtype), # 'INT16'
                    random.randint(0, 1),    # MQTT
                    random.randint(0, 1),    # B/L Endian
@@ -217,16 +220,16 @@ class PBoxWebAPI:
         return '&'.join(payload)
 
 
-def main():
-    """Main Function Entry."""
-    web = PBoxWebAPI('http://192.168.3.77')
-    print(web.login())
-    web.newchannel(items=['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '500'])
-    web.newdevice(name='Default')
-    web.newitems(50)
-    # for i in range(0,5):
-    #     print(web.newitem(['python', 'test', '5000', 'a', '0', '1', '1;3;2;1;INT16;0;0;0']))
-    # print(web.delitems())
+# def main():
+#     """Main Function Entry."""
+#     web = PBoxWebAPI('http://192.168.3.77')
+#     print(web.login())
+#     web.newchannel(items=['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '500'])
+#     web.newdevice(name='Default')
+#     web.newitems(50)
+#     # for i in range(0,5):
+#     #     print(web.newitem(['python', 'test', '5000', 'a', '0', '1', '1;3;2;1;INT16;0;0;0']))
+#     # print(web.delitems())
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

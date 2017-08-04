@@ -7,6 +7,7 @@
 # Program:  PBox WebMc API.
 # History:  2017-07-27 V1.0 [Heyn]
 #           2017-08-01 V1.1 [Heyn] New support https <verify=False>
+#           2017-08-04 Wheel Ver:0.0.5 [Heyn] login\newchannel\newdevice. -> @catch_exception
 
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -33,7 +34,8 @@ def catch_exception(origin_func):
         try:
             return origin_func(self, *args, **kwargs)
         except BaseException as msg:
-            return '[ERROR] %s an exception raised. *** %s ***'%(origin_func, str(msg))
+            print('[ERROR] %s an exception raised. *** %s ***'%(origin_func, str(msg)))
+            return False
     return wrapper
 
 @catch_exception
@@ -47,7 +49,7 @@ def msg_register(method, cgi):
             header = {'Content-Type':'application/x-www-form-urlencoded'}
             if payload is not False and method == 'POST':
                 # 2017-08-01 for https verify = False
-                ret = self.sess.post(self.url + cgi, data=payload, headers=header, timeout=5, verify=False)
+                ret = self.sess.post(self.url + cgi, data=payload, headers=header, timeout=3, verify=False)
             elif payload is not False and method == 'GET':
                 # 2017-08-01 for https verify = False
                 ret = self.sess.get(self.url + cgi, headers=header, timeout=3, verify=False)
@@ -111,14 +113,19 @@ class PBoxWebAPI:
         params['PassWord'] = self.passwordmd5
         return params
 
-    def login(self, password='admin'):
-        """WebMc Login"""
+    @catch_exception
+    def login(self, url='http://192.168.3.111', password='admin'):
+        """ WebMc Login
+            2017-08-03 V1.2 [Heyn] New url params
+        """
+        self.url = url + '/cgi-bin/'
         if ERROR_CODE in self.logininit(password=password):
             return False
         if SUCCESS_CODE in self.loginverify():
             return True
         return False
 
+    @catch_exception
     def newchannel(self, items, name='default'):
         """ PBox new a channel.
         Items params:
@@ -136,6 +143,7 @@ class PBoxWebAPI:
         logging.info('PBox Channel ID=%s', self.jcid)
         return True
 
+    @catch_exception
     def newdevice(self, name='default'):
         """PBox New Device."""
         params = collections.OrderedDict(TokenNumber=self.token)
@@ -218,3 +226,4 @@ class PBoxWebAPI:
         payload = ['TokenNumber=' + self.token, 'DelItemsID=' + ','.join(iids), 'DelDeviceID=' + self.jdid['id']]
 
         return '&'.join(payload)
+

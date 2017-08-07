@@ -8,6 +8,11 @@
 # History:  2017-07-27 V1.0 [Heyn]
 #           2017-08-01 V1.1 [Heyn] New support https <verify=False>
 #           2017-08-04 Wheel Ver:0.0.5 [Heyn] login\newchannel\newdevice. -> @catch_exception
+#           2017-08-07 Wheel Ver:0.0.6 [Heyn]
+#                            BugFix001: newchannel\newdevice\newitem return True or False.
+#                            New : alterchannel() alterdevice() alteritem() lanipaddress()
+#                            New : cloudaddress() download2app() reboot() newpassword()
+#
 
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -141,7 +146,23 @@ class PBoxWebAPI:
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, payload)
         self.jcid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['_id']) if isinstance(cid, dict) is False else cid
         logging.info('PBox Channel ID=%s', self.jcid)
-        return True
+        return isinstance(cid, dict)
+
+    @catch_exception
+    def alterchannel(self, items, name='default'):
+        """ PBox alter a channel.
+        Items params:
+            ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '500']
+            ['Modbus-TCP', '192.168.3.1', '500', '500']
+        """
+
+        payload = ['TokenNumber=' + self.token,
+                   'ChannelName=' + name,
+                   'ChannelID=' + self.jcid['id'],
+                   'ChannelConf=' + ';'.join(items)]
+
+        cid = msg_register('POST', 'AlterChannel.cgi')(lambda x, y: '&'.join(y))(self, payload)
+        return True if 'SUCCESS' in cid else False
 
     @catch_exception
     def newdevice(self, name='default'):
@@ -155,7 +176,17 @@ class PBoxWebAPI:
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, params)
         self.jdid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['device']['_id']) if isinstance(did, dict) is False else did
         logging.info('PBox Device ID=%s', self.jdid)
-        return True
+        return isinstance(did, dict)
+
+    @catch_exception
+    def alterdevice(self, name='default'):
+        """PBox Alter Device Name."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['DeviceName'] = name
+        params['ChannelID'] = self.jcid['id']
+        params['DeviceID'] = self.jdid['id']
+        did = msg_register('POST', 'AlterDevice.cgi')(lambda x, y: y)(self, params)
+        return True if 'SUCCESS' in did else False
 
     @msg_register('POST', 'DeleteChannel.cgi')
     def delchannel(self):
@@ -181,11 +212,24 @@ class PBoxWebAPI:
         params.extend(items)
 
         iid = msg_register('POST', 'AddDataitem.cgi')(lambda x, y: '&'.join(y))(self, list(map(lambda x: 'item=%s'%x, params)))
-        if isinstance(iid, dict) is not True:
-            return False
-        return True
+        return isinstance(iid, dict)
 
-    @print_pretty(['ItemName', 'AliasName', 'Frequency', 'Slave ID', 'Function Code', 'Slave Address','Rate', 'TYPE', 'MQTT', 'B/L Endian', 'R/W', 'Result'])
+    @catch_exception
+    def alteritem(self, items, itemid=None):
+        """ PBox Alter Item
+            eg.
+            Modbus RTU : item=['python', 'test', '5000', 'a', '0', '1', '1;3;2;1;INT16;0;0;0']
+            itemid = item id
+        """
+
+        params = [self.token, self.jdid['id']]
+        params.extend(items)
+        params.extend([itemid['id']])  # DataItem ID
+
+        iid = msg_register('POST', 'AlterDataitem.cgi')(lambda x, y: '&'.join(y))(self, list(map(lambda x: 'item=%s'%x, params)))
+        return isinstance(iid, dict)
+
+    @print_pretty(['ItemName', 'AliasName', 'Frequency', 'Slave ID', 'Function Code', 'Regs Address','Rate', 'TYPE', 'MQTT', 'B/L Endian', 'R/W', 'Result'])
     def newitems(self, num):
         """PBox Insert Items."""
         alphabet = string.ascii_letters #+ string.digits
@@ -226,4 +270,46 @@ class PBoxWebAPI:
         payload = ['TokenNumber=' + self.token, 'DelItemsID=' + ','.join(iids), 'DelDeviceID=' + self.jdid['id']]
 
         return '&'.join(payload)
+
+    @msg_register('POST', 'CloudServerConfig.cgi')
+    def cloudaddress(self, addr='47.93.79.77'):
+        """Setting Cloud IP Address"""
+        return 'TokenNumber=%s&Address=%s'%(self.token, addr)
+
+    @msg_register('POST', 'LoadData.cgi')
+    def download2app(self):
+        """Exe configuration."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['LoadDataUp'] = '1'
+        return params
+
+    @msg_register('POST', 'PasswordConfig.cgi')
+    def newpassword(self, newpassword='000000'):
+        """Change Password"""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['OldPassword'] = self.password
+        md5 = hashlib.md5()
+        md5.update(newpassword.encode('UTF-8'))
+        params['NewPassword'] = self.passwordmd5 = md5.hexdigest()
+        params['ConfirmPassword'] = self.passwordmd5
+        return params
+
+    @msg_register('POST', 'IPConfig.cgi')
+    def lanipaddress(self, ipaddr='192.168.3.77', netmask='255.255.255.0'):
+        """Change LAN IP Address."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['DHCPMode'] = ''
+        params['NetType'] = 'wan'
+        params['IPAddress'] = ipaddr
+        params['SubnetMask'] = netmask
+        params['Gateway'] = '10.10.10.10'
+        params['DNSAddress'] = '8.8.8.8'
+        return params
+
+    @msg_register('POST', 'RebootArm.cgi')
+    def reboot(self):
+        """Exec configuration."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['restart'] = 'restart'
+        return params
 

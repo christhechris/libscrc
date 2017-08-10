@@ -10,6 +10,7 @@ from codecs import open
 # Author:   Heyn (heyunhuan@gmail.com)
 # Program:  Library CRC Modules.
 # History:  2017-08-09 Wheel Ver:0.0.1 [Heyn] Initialize
+#           2017-08-10 Wheel Ver:0.0.2 [Heyn] New CRC8
 
 """
 See:
@@ -25,9 +26,9 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.0.1',
+    version='0.0.2',
 
-    description='Library for calculating CRC16',
+    description='Library for calculating CRC8\CRC16\CRC32',
     long_description=long_description,
 
     url='http://heyunhuan513.blog.163.com',
@@ -66,7 +67,8 @@ setup(
 
     # packages=find_packages(exclude=['libscrc.']),
     packages=['libscrc'],
-    ext_modules=[Extension('libscrc._crc16', sources=['src/_crc16module.c']),
+    ext_modules=[Extension('libscrc._crc8',  sources=['src/_crc8module.c' ]),
+                 Extension('libscrc._crc16', sources=['src/_crc16module.c']),
                  Extension('libscrc._crc32', sources=['src/_crc32module.c']),
                 ],
 

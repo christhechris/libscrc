@@ -4,9 +4,21 @@ Installation
 
 * compile and install the library::
 
+    [Win32 or Ubuntu Linux]  
     # python setup.py build
     # python setup.py install
     * you will need the administrative privileges to execute the last command.
+
+    [ARM imx6(toradex)]  
+    # opkg install gcc
+    # opkg install gcc-symlinks
+    # opkg install binutils
+
+    # gcc version 6.2.1 20161016 (Linaro GCC 6.2-2016.11)
+
+    # CC=gcc LDSHARED='gcc -shared' python setup.py build 
+    # CC=gcc LDSHARED='gcc -shared' python setup.py install
+    # CC=gcc LDSHARED='gcc -shared' python setup.py build bdist_wheel
 
 -----
 Usage

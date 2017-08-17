@@ -4,13 +4,14 @@
 *                                           All Rights Reserved
 * File    : _crc16module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.3
+* Version : V0.0.4
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-09 09:52AM
 *                       2017-08-17 [Heyn] Optimized Code.
+*                                         Wheel 0.0.4 New CRC16-SICK / CRC16-DNP
 *
 *********************************************************************************************************
 */
@@ -24,17 +25,19 @@
 #define                 HZ16_POLYNOMIAL_8005    0x8005
 #define                 HZ16_POLYNOMIAL_CCITT   0x1021
 #define                 HZ16_POLYNOMIAL_KERMIT  0x8408
+#define                 HZ16_POLYNOMIAL_DNP     0xA6BC
 
 static int              crc_tab16_a001_init     = FALSE;
 static int              crc_tab16_8005_init     = FALSE;
 static int              crc_tab16_ccitt_init    = FALSE;
 static int              crc_tab16_kermit_init   = FALSE;
+static int              crc_tab16_dnp_init      = FALSE;
 
 static unsigned short   crc_tab16_a001[256]     = {0x0000};
 static unsigned short   crc_tab16_8005[256]     = {0x0000};
 static unsigned short   crc_tab16_ccitt[256]    = {0x0000};
 static unsigned short   crc_tab16_kermit[256]   = {0x0000};
-
+static unsigned short   crc_tab16_dnp[256]      = {0x0000};
 
 /*
 *********************************************************************************************************
@@ -342,15 +345,139 @@ static PyObject * _crc16_kermit(PyObject *self, PyObject *args)
     return Py_BuildValue("I", result);
 }
 
+/*
+*********************************************************************************************************
+                                    POLY=0x8005 [SICK]
+*********************************************************************************************************
+*/
 
+unsigned short hz_update_crc16_sick( unsigned short crc16, unsigned char c, char prev_byte ) 
+{
+    unsigned short crc = crc16;
+    unsigned short short_c, short_p;
+
+    short_c  =   0x00FF & (unsigned short) c;
+    short_p  = ( 0x00FF & (unsigned short) prev_byte ) << 8;
+
+    if ( crc & 0x8000 ) crc = ( crc << 1 ) ^ HZ16_POLYNOMIAL_8005;
+    else                crc =   crc << 1;
+
+    crc &= 0xFFFF;
+    crc ^= ( short_c | short_p );
+
+    return crc;
+}
+
+unsigned short hz_calc_crc16_sick( const unsigned char *pSrc, unsigned int len, unsigned short crc16 )
+{
+			 char  prev_byte	= 0x00;
+	unsigned short crc		    = crc16;
+
+	for ( unsigned int i=0; i<len; i++ ) {
+		crc	        = hz_update_crc16_sick(crc, pSrc[i], prev_byte);
+		prev_byte	= pSrc[i];
+    }
+
+	return crc;
+}
+
+static PyObject * _crc16_sick(PyObject *self, PyObject *args)
+{
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00000000L;
+    unsigned short crc16  = 0x0000;
+    unsigned short result = 0x0000;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+        return NULL;
+#endif /* PY_MAJOR_VERSION */
+
+    result = hz_calc_crc16_sick(data, data_len, crc16);
+
+    return Py_BuildValue("I", result);
+}
+
+/*
+*********************************************************************************************************
+                                    POLY=0xA6BC [DNP]
+*********************************************************************************************************
+*/
+
+void init_crc16_dnp_tab( void ) 
+{
+    unsigned short crc, c;
+
+    for ( unsigned int i=0; i<256; i++ ) {
+        crc = 0;
+        c   = (unsigned short) i;
+        for ( unsigned int j=0; j<8; j++ ) {
+            if ( (crc ^ c) & 0x0001 ) crc = ( crc >> 1 ) ^ HZ16_POLYNOMIAL_DNP;
+            else                      crc =   crc >> 1;
+            c = c >> 1;
+        }
+        crc_tab16_dnp[i] = crc;
+    }
+    crc_tab16_dnp_init = TRUE;
+}
+
+unsigned short hz_update_crc16_dnp( unsigned short crc16, unsigned char c ) 
+{
+    unsigned short crc = crc16;
+    unsigned short tmp, short_c;
+
+    short_c = 0x00FF & (unsigned short) c;
+
+    if ( ! crc_tab16_dnp_init ) init_crc16_dnp_tab();
+
+    tmp =  crc       ^ short_c;
+    crc = (crc >> 8) ^ crc_tab16_dnp[ tmp & 0xFF ];
+
+    return crc;
+}
+
+unsigned short hz_calc_crc16_dnp( const unsigned char *pSrc, unsigned int len, unsigned short crc16)
+{
+	unsigned short crc = crc16;
+    
+    for ( unsigned int i=0; i<len; i++ ) {
+        crc	= hz_update_crc16_dnp(crc, pSrc[i]);
+    }
+    return ~crc;
+}
+
+static PyObject * _crc16_dnp(PyObject *self, PyObject *args)
+{
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00000000L;
+    unsigned short crc16  = 0x0000;
+    unsigned short result = 0x0000;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+        return NULL;
+#endif /* PY_MAJOR_VERSION */
+
+    result = hz_calc_crc16_dnp(data, data_len, crc16);
+
+    return Py_BuildValue("I", result);
+}
 
 /* method table */
 static PyMethodDef _crc16Methods[] = {
     {"modbus",  _crc16_modbus, METH_VARARGS, "Calculate CRC (Modbus) of CRC16 [Poly=0xA001, Init=0xFFFF]"},
     {"ibm",     _crc16_ibm,    METH_VARARGS, "Calculate CRC (IBM/ARC/LHA) of CRC16 [Poly=0x8005, Init=0x0000]"},
-    {"xmodem",  _crc16_xmodem, METH_VARARGS, "Calculate CCITT CRC16  [Poly=0x1021 Init=0x0000)"},
-    {"ccitt",   _crc16_ccitt,  METH_VARARGS, "Calculate CCITT CRC16  [Poly=0x1021 Init=0xFFFF or 0x1D0F)"},
-    {"kermit",  _crc16_kermit, METH_VARARGS, "Calculate Kermit CRC16 [Poly=0x8408 Init=0x0000)"},
+    {"xmodem",  _crc16_xmodem, METH_VARARGS, "Calculate CCITT of CRC16  [Poly=0x1021 Init=0x0000)"},
+    {"ccitt",   _crc16_ccitt,  METH_VARARGS, "Calculate CCITT of CRC16  [Poly=0x1021 Init=0xFFFF or 0x1D0F)"},
+    {"kermit",  _crc16_kermit, METH_VARARGS, "Calculate Kermit of CRC16 [Poly=0x8408 Init=0x0000)"},
+    {"sick",    _crc16_sick,   METH_VARARGS, "Calculate Sick of CRC16   [Poly=0x8005 Init=0x0000)"},
+    {"dnp",     _crc16_dnp,    METH_VARARGS, "Calculate DNP  of CRC16   [Poly=0xA6BC Init=0x0000)"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -358,7 +485,8 @@ static PyMethodDef _crc16Methods[] = {
 /* module documentation */
 PyDoc_STRVAR(_crc16_doc,
 "Calculation of CRC16 \n"
-"Modbus IBM CCITT-XMODEM CCITT-KERMIT CCITT-0xFFFF CCITT-0x1D0F\n"
+"Modbus IBM CCITT-XMODEM CCITT-KERMIT CCITT-0xFFFF CCITT-0x1D0F \n"
+"CRC16-SICK CRC16-DNP \n"
 "\n");
 
 
@@ -384,7 +512,7 @@ PyInit__crc16(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.3");
+    PyModule_AddStringConstant(m, "__version__", "0.0.4");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

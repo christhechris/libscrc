@@ -12,6 +12,7 @@ from codecs import open
 # History:  2017-08-09 Wheel Ver:0.0.1 [Heyn] Initialize
 #           2017-08-10 Wheel Ver:0.0.2 [Heyn] New add CRC8 (IntelHex/BCC/LRC/CRC8(VERB))
 #           2017-08-17 Wheel Ver:0.0.3 [Heyn] Optimized Code.
+#                      Wheel Ver:0.0.4 [Heyn] New CRC16-SICK / CRC16-DNP.
 
 """
 See:
@@ -27,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.0.3',
+    version='0.0.4',
 
     description='Library for calculating CRC8/CRC16/CRC32',
     long_description=long_description,

@@ -1,16 +1,17 @@
 # -*- coding:utf8 -*-
-""" Setup script for crc16 library. """
+""" Setup script for CRC8/CRC16/CRC32 library. """
 from os import path
 from setuptools import setup, find_packages, Extension
 from codecs import open
 
 # !/usr/bin/python
 # Python:   3.5.2
-# Platform: Windows/ARMv7/Linux
+# Platform: Windows/Linux/ARMv7
 # Author:   Heyn (heyunhuan@gmail.com)
-# Program:  Library CRC Modules.
+# Program:  Library CRC8/CRC16/CRC32 Modules.
 # History:  2017-08-09 Wheel Ver:0.0.1 [Heyn] Initialize
-#           2017-08-10 Wheel Ver:0.0.2 [Heyn] New CRC8
+#           2017-08-10 Wheel Ver:0.0.2 [Heyn] New add CRC8 (IntelHex/BCC/LRC/CRC8(VERB))
+#           2017-08-17 Wheel Ver:0.0.3 [Heyn] Optimized Code.
 
 """
 See:
@@ -26,9 +27,9 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.0.2',
+    version='0.0.3',
 
-    description='Library for calculating CRC8\CRC16\CRC32',
+    description='Library for calculating CRC8/CRC16/CRC32',
     long_description=long_description,
 
     url='http://heyunhuan513.blog.163.com',
@@ -67,9 +68,8 @@ setup(
 
     # packages=find_packages(exclude=['libscrc.']),
     packages=['libscrc'],
-    ext_modules=[Extension('libscrc._crc8',  sources=['src/_crc8module.c' ]),
+    ext_modules=[Extension('libscrc._crc8', sources=['src/_crc8module.c']),
                  Extension('libscrc._crc16', sources=['src/_crc16module.c']),
                  Extension('libscrc._crc32', sources=['src/_crc32module.c']),
                 ],
-
 )

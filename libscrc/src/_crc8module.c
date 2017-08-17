@@ -2,14 +2,15 @@
 *********************************************************************************************************
 *                              		(c) Copyright 2006-2017, HZ, Studio
 *                                           All Rights Reserved
-* File    : _crc16module.c
+* File    : _crc8module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.1
+* Version : V0.0.3
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-10 08:42AM
+*                       2017-08-17 [Heyn] Optimized Code.
 *
 *********************************************************************************************************
 */
@@ -20,63 +21,55 @@
 #define                 FALSE                   0
 
 static int              crc_tab8_verb_init      = FALSE;
-static unsigned short	crc_tab8_verb[256]      = {0x00};
+static unsigned char	crc_tab8_verb[256]      = {0x00};
 
 
 /*
  * Width            = 8
  * InitValue(crc8)  = 0x00
  */
-unsigned char hz_calc_crc8_intelhex( unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
+unsigned char hz_calc_crc8_bcc( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
-	for (unsigned int i=0; i<len; i++) {
-		crc8 += pSrc[i];
-	}
-	crc8 = (~crc8) + 0x01;
-	return crc8;
+    unsigned char crc = crc8;
+
+	for ( unsigned int i=0; i<len; i++ ) {
+		crc ^= pSrc[i];
+    }
+
+	return crc;
 }
 
 /*
  * Width            = 8
  * InitValue(crc8)  = 0x00
  */
-unsigned char hz_calc_crc8_bcc( unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
+unsigned char hz_calc_crc8_lrc( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
-	for(unsigned int i=0; i<len; i++) {
-		crc8 ^= pSrc[i];
-	}
-	return crc8;
-}
+    unsigned char crc = crc8;
 
-/*
- * Width            = 8
- * InitValue(crc8)  = 0x00
- */
-unsigned char hz_calc_crc8_lrc( unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
-{
-	for(unsigned int i=0; i<len; i++) {
-		crc8 += pSrc[i];
+	for ( unsigned int i=0; i<len; i++ ) {
+		crc += pSrc[i];
 	}
-	crc8 = (~crc8)+1;
-	return crc8;
+    crc = (~crc) + 0x01;
+
+	return crc;
 }
 
 void init_crc8_verb_table(void)
 {
-    int i, j;
     unsigned char crc, c;
-    for (i=0; i<256; i++) {
+
+    for ( unsigned int i=0; i<256; i++ ) {
         crc = 0;
         c   = i;
-        for (j=0; j<8; j++) {
-			if ( (crc ^ c) & 0x01 )	{
-				crc = crc >> 1;
+        for ( unsigned int j=0; j<8; j++ ) {
+			if ((crc ^ c) & 0x01) {
+				crc = crc >> 0x01;
 				crc = crc ^ 0x8C;
+			} else {
+				crc = crc >> 0x01;
 			}
-			else {
-				crc =   crc >> 1;
-			}
-			c = c >> 1;
+			c = c >> 0x01;
         }
         crc_tab8_verb[i] = crc;
     }
@@ -85,25 +78,28 @@ void init_crc8_verb_table(void)
 
 unsigned char hz_update_crc8_verb( unsigned char crc8, unsigned char c ) 
 {
+    unsigned char crc = crc8;
     if ( ! crc_tab8_verb_init ) init_crc8_verb_table();
-    crc8 = crc_tab8_verb[ crc8 ^ c ];
-    return crc8;
+    crc = crc_tab8_verb[ crc ^ c ];
+    return crc;
 }
 
-unsigned short hz_calc_crc8_verb( unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
+unsigned char hz_calc_crc8_verb( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
-	for(unsigned int i=0; i<len; i++) {
-		crc8 = hz_update_crc8_verb(crc8, pSrc[i]);
+    unsigned char crc = crc8;
+	for ( unsigned int i=0; i<len; i++ ) {
+		crc = hz_update_crc8_verb(crc, pSrc[i]);
 	}
-	return crc8;
+	return crc;
 }
+
 
 static PyObject * _crc8_intel(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned char crc8 = 0x00;
-    unsigned char result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00;
+    unsigned char crc8    = 0x00;
+    unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
@@ -113,17 +109,17 @@ static PyObject * _crc8_intel(PyObject *self, PyObject *args)
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
-    result = hz_calc_crc8_intelhex(data, data_len, crc8);
+    result = hz_calc_crc8_lrc(data, data_len, crc8);
 
     return Py_BuildValue("B", result);
 }
 
 static PyObject * _crc8_bcc(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned char crc8 = 0x00;
-    unsigned char result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00;
+    unsigned char crc8    = 0x00;
+    unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
@@ -140,10 +136,10 @@ static PyObject * _crc8_bcc(PyObject *self, PyObject *args)
 
 static PyObject * _crc8_lrc(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned char crc8 = 0x00;
-    unsigned char result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00;
+    unsigned char crc8    = 0x00;
+    unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
@@ -160,10 +156,10 @@ static PyObject * _crc8_lrc(PyObject *self, PyObject *args)
 
 static PyObject * _crc8_verb(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned char crc8 = 0x00;
-    unsigned char result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00;
+    unsigned char crc8    = 0x00;
+    unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
@@ -180,10 +176,10 @@ static PyObject * _crc8_verb(PyObject *self, PyObject *args)
 
 /* method table */
 static PyMethodDef _crc8Methods[] = {
-    {"intel",   _crc8_intel,    METH_VARARGS, "Calculate Intex HEX CRC of CRC8 [Init=0x00]"},
-    {"bcc",     _crc8_bcc,      METH_VARARGS, "Calculate BCC of CRC8 [Init=0x00]"},
-    {"lrc",     _crc8_lrc,      METH_VARARGS, "Calculate LRC of CRC8 [Init=0x00]"},
-    {"verb",    _crc8_verb,     METH_VARARGS, "Calculate Verb of CRC8 [Poly=0x8C Init=0x00] for DS18B20"},
+    {"intel",   _crc8_intel,    METH_VARARGS, "Calculate Intel hexadecimal of CRC8 [Initial = 0x00]"},
+    {"bcc",     _crc8_bcc,      METH_VARARGS, "Calculate BCC of CRC8 [Initial = 0x00]"},
+    {"lrc",     _crc8_lrc,      METH_VARARGS, "Calculate LRC of CRC8 [Initial = 0x00]"},
+    {"verb",    _crc8_verb,     METH_VARARGS, "Calculate Verb of CRC8 [Poly = 0x8C Initial = 0x00] for DS18B20"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -191,10 +187,10 @@ static PyMethodDef _crc8Methods[] = {
 /* module documentation */
 PyDoc_STRVAR(_crc8_doc,
 "Calculation of CRC8 \n"
-"libscrc.intel -> Calculate Intex HEX CRC of CRC8 [Init=0x00]\n"
-"libscrc.bcc   -> Calculate BCC(XOR) of CRC8 [Init=0x00]\n"
-"libscrc.lrc   -> Calculate LRC of CRC8 [Init=0x00]\n"
-"libscrc.verb  -> Calculate DS18B20's CRC of CRC8 [Poly=0x8C Init=0x00]\n"
+"libscrc.intel -> Calculate Intel hexadecimal of CRC8 [Initial = 0x00]\n"
+"libscrc.bcc   -> Calculate BCC(XOR) of CRC8 [Initial = 0x00]\n"
+"libscrc.lrc   -> Calculate LRC of CRC8 [Initial = 0x00]\n"
+"libscrc.verb  -> Calculate DS18B20 of CRC8 [Poly = 0x8C Initial = 0x00]\n"
 "\n");
 
 
@@ -213,14 +209,14 @@ static struct PyModuleDef _crc8module = {
 PyMODINIT_FUNC
 PyInit__crc8(void)
 {
-    PyObject *m;
+    PyObject *m = NULL;
 
     m = PyModule_Create(&_crc8module);
     if (m == NULL) {
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.1");
+    PyModule_AddStringConstant(m, "__version__", "0.0.3");
     PyModule_AddStringConstant(m, "__author__",  "Heyn");
 
     return m;

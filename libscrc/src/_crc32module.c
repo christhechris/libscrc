@@ -2,14 +2,15 @@
 *********************************************************************************************************
 *                              		(c) Copyright 2006-2017, HZ, Studio
 *                                           All Rights Reserved
-* File    : _crc16module.c
+* File    : _crc32module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.1
+* Version : V0.0.3
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-09 16:39PM
+*                       2017-08-17 [Heyn] Optimized Code.
 *
 *********************************************************************************************************
 */
@@ -25,8 +26,8 @@
 static int              crc_tab32_fsc_init      = FALSE;
 static int              crc_tab32_crc_init      = FALSE;
 
-static unsigned long	crc_tab32_fsc[256]      = {0x00000000};
-static unsigned long    crc_tab32_crc[256]      = {0x00000000};
+static unsigned int     crc_tab32_fsc[256]      = {0x00000000};
+static unsigned int     crc_tab32_crc[256]      = {0x00000000};
 
 
 /*
@@ -37,17 +38,18 @@ static unsigned long    crc_tab32_crc[256]      = {0x00000000};
 
 void init_crc32_fsc_table( void ) 
 {
-    int i, j;
-    unsigned int crc,c;
+    unsigned int crc, c;
 
-    for (i=0; i<256; i++) {
+    for ( unsigned int i=0; i<256; i++ ) {
 		crc = 0;
-		c	= ((unsigned int ) i) << 24;
-        for (j=0; j<8; j++) {
-            if ( (crc ^ c) & 0x80000000L )	crc = ( crc << 1 ) ^ HZ32_POLYNOMIAL_FSC;
-            else							crc =   crc << 1;
+		c	= (( unsigned int ) i) << 24;
+        for ( unsigned int j=0; j<8; j++ ) {
+            if ( (crc ^ c) & 0x80000000L ) {
+                crc = ( crc << 1 ) ^ HZ32_POLYNOMIAL_FSC;
+            } else {
+                crc =   crc << 1;
+            }
 			c = c << 1;
-
         }
         crc_tab32_fsc[i] = crc;
     }
@@ -56,16 +58,18 @@ void init_crc32_fsc_table( void )
 
 unsigned int hz_update_crc32_fsc( unsigned int crc32, unsigned char c ) 
 {
-    unsigned int tmp, int_c;
+    unsigned int crc = crc32;
+    unsigned int tmp = 0x00000000L;
+    unsigned int int_c = 0x00000000L;
 
-    int_c = 0x000000ffL & (unsigned int) c;
+    int_c = 0x000000FF & (unsigned int) c;
 
     if ( ! crc_tab32_fsc_init ) init_crc32_fsc_table();
 
-	tmp = (crc32 >> 24) ^ int_c;
-    crc32 = (crc32 << 8) ^ crc_tab32_fsc[ tmp & 0xff ];
+	tmp = (crc >> 24) ^ int_c;
+    crc = (crc << 8) ^ crc_tab32_fsc[ tmp & 0xFF ];
 
-    return crc32;
+    return crc;
 }
 
 /*
@@ -74,26 +78,27 @@ unsigned int hz_update_crc32_fsc( unsigned int crc32, unsigned char c )
  * InitValue(crc32) = 0xFFFFFFFFL
  */
 
-unsigned int hz_calc_crc32_fsc( unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
+unsigned int hz_calc_crc32_fsc( const unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
 {
+    unsigned int crc = crc32;
 	for(unsigned int i=0; i<len; i++) {
-		crc32 = hz_update_crc32_fsc(crc32,pSrc[i]);
+		crc = hz_update_crc32_fsc(crc, pSrc[i]);
 	}
-	return crc32;
+	return crc;
 }
 
 static PyObject * _crc32_fsc(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned int crc32 = 0xFFFFFFFFL;
-    unsigned int result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00000000L;
+    unsigned int crc32    = 0xFFFFFFFFL;
+    unsigned int result   = 0x00000000L;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I:fsc", &data, &data_len, &crc32))
+    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc32))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I:fsc", &data, &data_len, &crc32))
+    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc32))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -110,56 +115,60 @@ static PyObject * _crc32_fsc(PyObject *self, PyObject *args)
 */
 void init_crc32_table( void ) 
 {
-    int i, j;
-    unsigned int crc32;
+    unsigned int crc = 0x00000000L;
 
-    for (i=0; i<256; i++) {
-        crc32 = (unsigned int) i;
-        for (j=0; j<8; j++) {
-            if ( crc32 & 0x00000001L )  crc32 = ( crc32 >> 1 ) ^ HZ32_POLYNOMIAL_CRC;
-            else                        crc32 =   crc32 >> 1;
+    for ( unsigned int i=0; i<256; i++ ) {
+        crc = i;
+        for ( unsigned int j=0; j<8; j++ ) {
+            if ( crc & 0x00000001L ) {
+                crc = ( crc >> 1 ) ^ HZ32_POLYNOMIAL_CRC;
+            } else {
+                crc = crc >> 1;
+            }
         }
-        crc_tab32_crc[i] = crc32;
+        crc_tab32_crc[i] = crc;
     }
     crc_tab32_crc_init = TRUE;
 }
 
 unsigned int hz_update_crc32( unsigned int crc32, unsigned char c ) 
 {
+    unsigned int crc = crc32;
+    unsigned int tmp = 0x00000000L;
+    unsigned int int_c = 0x00000000L;
 
-    unsigned int tmp, int_c;
-
-    int_c = 0x000000ffL & (unsigned int) c;
-
+    int_c = 0x000000FFL & (unsigned int) c;
     if ( ! crc_tab32_crc_init ) init_crc32_table();
 
-    tmp = crc32 ^ int_c;
-    crc32 = (crc32 >> 8) ^ crc_tab32_crc[ tmp & 0xFF ];
+    tmp = crc ^ int_c;
+    crc = (crc >> 8) ^ crc_tab32_crc[ tmp & 0xFF ];
 
-    return crc32;
+    return crc;
 }
 
-unsigned int hz_calc_crc32( unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
+unsigned int hz_calc_crc32( const unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
 {
-	for(unsigned int i=0; i<len; i++) {
-		crc32 = hz_update_crc32(crc32, pSrc[i]);
+    unsigned int crc = crc32;
+
+	for ( unsigned int i=0; i<len; i++ ) {
+		crc = hz_update_crc32(crc, pSrc[i]);
 	}
-	crc32    ^= 0xFFFFFFFFL;
-	return crc32;
+	crc ^= 0xFFFFFFFFL;
+	return crc;
 }
 
 static PyObject * _crc32_crc32(PyObject *self, PyObject *args)
 {
-    const unsigned char* data;
-    unsigned int data_len;
-    unsigned int crc32 = 0xFFFFFFFFL;
-    unsigned int result;
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00000000L;
+    unsigned int crc32    = 0xFFFFFFFFL;
+    unsigned int result   = 0x00000000L;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I:crc32", &data, &data_len, &crc32))
+    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc32))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I:crc32", &data, &data_len, &crc32))
+    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc32))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -207,7 +216,7 @@ PyInit__crc32(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.1");
+    PyModule_AddStringConstant(m, "__version__", "0.0.3");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

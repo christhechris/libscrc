@@ -1,5 +1,5 @@
 # -*- coding:utf8 -*-
-""" Setup script for CRC8/CRC16/CRC32 library. """
+""" Setup script for CRC8/CRC16/CRC32/CRC64 library. """
 from os import path
 from setuptools import setup, find_packages, Extension
 from codecs import open
@@ -13,6 +13,7 @@ from codecs import open
 #           2017-08-10 Wheel Ver:0.0.2 [Heyn] New add CRC8 (IntelHex/BCC/LRC/CRC8(VERB))
 #           2017-08-17 Wheel Ver:0.0.3 [Heyn] Optimized Code.
 #                      Wheel Ver:0.0.4 [Heyn] New CRC16-SICK / CRC16-DNP.
+#           2017-08-17 Wheel Ver:0.0.5 [Heyn] New CRC64-ISO / CRC64-ECMA182.
 
 """
 See:
@@ -28,12 +29,12 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.0.4',
+    version='0.0.5',
 
-    description='Library for calculating CRC8/CRC16/CRC32',
+    description='Library for calculating CRC8/CRC16/CRC32/CRC64',
     long_description=long_description,
 
-    url='http://heyunhuan513.blog.163.com',
+    url='',
 
     author='Heyn',
     author_email='heyunhuan@gmail.com',
@@ -65,12 +66,13 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords=['CRC16', 'CCITT', 'XMODEM', 'KERMIT'],
+    keywords=['CRC8', 'CRC16', 'CCITT', 'XMODEM', 'KERMIT', 'CRC32', 'CRC64'],
 
     # packages=find_packages(exclude=['libscrc.']),
     packages=['libscrc'],
     ext_modules=[Extension('libscrc._crc8', sources=['src/_crc8module.c']),
                  Extension('libscrc._crc16', sources=['src/_crc16module.c']),
                  Extension('libscrc._crc32', sources=['src/_crc32module.c']),
+                 Extension('libscrc._crc64', sources=['src/_crc64module.c']),
                 ],
 )

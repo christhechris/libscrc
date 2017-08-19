@@ -8,7 +8,9 @@
 # History:  2017-08-09 Wheel Ver:0.0.1 [Heyn] Initialize
 #           2017-08-10 Wheel Ver:0.0.2 [Heyn] New add CRC8 (IntelHex/BCC/LRC/CRC8(VERB))
 #           2017-08-17 Wheel Ver:0.0.3 [Heyn] Optimized Code.
+#           2017-08-19 Wheel Ver:0.0.5 [Heyn] New CRC64-ISO / CRC64-ECMA182.
 
 from ._crc8  import *
 from ._crc16 import *
 from ._crc32 import *
+from ._crc64 import *

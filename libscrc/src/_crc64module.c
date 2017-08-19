@@ -89,10 +89,10 @@ static PyObject * _crc64_iso(PyObject *self, PyObject *args)
     unsigned long long result   = 0x00000000L;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc64))
+    if (!PyArg_ParseTuple(args, "y#|K", &data, &data_len, &crc64))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc64))
+    if (!PyArg_ParseTuple(args, "s#|K", &data, &data_len, &crc64))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -167,10 +167,10 @@ static PyObject * _crc64_ecma182(PyObject *self, PyObject *args)
     unsigned long long result   = 0x00000000L;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc64))
+    if (!PyArg_ParseTuple(args, "y#|K", &data, &data_len, &crc64))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc64))
+    if (!PyArg_ParseTuple(args, "s#|K", &data, &data_len, &crc64))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 

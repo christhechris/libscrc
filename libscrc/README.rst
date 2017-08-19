@@ -12,37 +12,39 @@ Installation
 
 .. code:: bash
 
+    pip3 install libscrc
+
+or
+
+.. code:: bash
+
     python setup.py build
     python setup.py install
 
-Or
-
-.. code:: bash
-    pip3 install libscrc
-
-  you will need the administrative privileges to execute the last command.
+* You will need the administrative privileges to execute the last command.
 
 After installation you can run unit tests to make sure that the library works fine.  Execute::
 
-.. code:: code
-    python -m libscrc.testmodbus
-    python -m libscrc.testcrc64
+.. code:: python
+
+    python -m libscrc.testmodbus 
+    python -m libscrc.testcrc64 
 
 Usage
 -----
 
 In Python 3::
 
-.. code:: code
+.. code:: python
 
     import libscrc
 
-    crc16 = libscrc.modbus(b'1234')  # for ASCII
-    crc16 = libscrc.modbus(b'\x01\x02')  # for HEX
+    crc16 = libscrc.modbus(b'1234')  # for ASCII  
+    crc16 = libscrc.modbus(b'\x01\x02')  # for HEX  
 
 You can also calculate CRC gradually::
 
-.. code:: code
+.. code:: python
 
     import libscrc
     crc16 = libscrc.xmodem(b'1234')

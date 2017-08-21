@@ -4,7 +4,7 @@
 *                                           All Rights Reserved
 * File    : _crc16module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.4
+* Version : V0.0.5
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
@@ -12,6 +12,8 @@
 *		New Create at 	2017-08-09 09:52AM
 *                       2017-08-17 [Heyn] Optimized Code.
 *                                         Wheel 0.0.4 New CRC16-SICK / CRC16-DNP
+*                       2017-08-21 [Heyn] Optimization code for the C99 standard.
+*                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
 *
 *********************************************************************************************************
 */
@@ -47,12 +49,13 @@ static unsigned short   crc_tab16_dnp[256]      = {0x0000};
 
 void init_crc16_a001_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned short crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = (unsigned short) i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x0001 ) {
                 crc = ( crc >> 1 ) ^ HZ16_POLYNOMIAL_A001;
             } else {
@@ -86,8 +89,10 @@ unsigned short hz_update_crc16_a001( unsigned short crc16, unsigned char c )
  */
 unsigned short hz_calc_crc16_a001( const unsigned char *pSrc, unsigned int len, unsigned short crc16 )
 {
+    unsigned int i = 0;
     unsigned short crc = crc16;
-	for (unsigned int i=0; i<len; i++) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc16_a001(crc, pSrc[i]);
 	}
 	return crc;
@@ -123,12 +128,13 @@ static PyObject * _crc16_modbus(PyObject *self, PyObject *args)
 */
 void init_crc16_8005_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned short crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = (unsigned short) i << 8;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x8000 ) {
                 crc = ( crc << 1 ) ^ HZ16_POLYNOMIAL_8005;
             } else {
@@ -163,8 +169,10 @@ unsigned short hz_update_crc16_8005( unsigned short crc16, unsigned char c )
  */
 unsigned short hz_calc_crc16_ibm( const unsigned char *pSrc, unsigned int len, unsigned short crc16 )
 {
+    unsigned int i = 0;
     unsigned short crc = crc16;
-	for (unsigned int i=0; i<len; i++) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc16_8005(crc,pSrc[i]);
 	}
 	return crc;
@@ -200,12 +208,13 @@ static PyObject * _crc16_ibm(PyObject *self, PyObject *args)
 */
 void init_crc16_ccitt_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned short crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = ((unsigned short) i) << 8;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x8000 ) crc = ( crc << 1 ) ^ HZ16_POLYNOMIAL_CCITT;
             else                      crc =   crc << 1;
             c = c << 1;
@@ -233,8 +242,10 @@ unsigned short hz_update_crc16_ccitt( unsigned short crc16, unsigned char c )
 
 unsigned short hz_calc_ccitt( const unsigned char *pSrc, unsigned int len, unsigned short crc16)
 {
+    unsigned int i = 0;
     unsigned short crc = crc16;
-	for (unsigned int i=0; i<len; i++) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc16_ccitt(crc, pSrc[i]);
 	}
 	return crc;
@@ -287,12 +298,13 @@ static PyObject * _crc16_ccitt(PyObject *self, PyObject *args)
 */
 void init_crc16_kermit_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned short crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = (unsigned short) i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x0001 ) crc = ( crc >> 1 ) ^ HZ16_POLYNOMIAL_KERMIT;
             else                      crc =   crc >> 1;
             c = c >> 1;
@@ -318,8 +330,10 @@ unsigned short hz_update_crc16_kermit( unsigned short crc16, unsigned char c )
 
 unsigned short hz_calc_ccitt_kermit( const unsigned char *pSrc, unsigned int len, unsigned short crc16 )
 {
+    unsigned int i = 0;
     unsigned short crc = crc16;
-	for ( unsigned int i=0; i<len; i++ ) {
+
+	for ( i=0; i<len; i++ ) {
 		crc	= hz_update_crc16_kermit(crc16, pSrc[i]);
 	}
 	return crc;
@@ -370,10 +384,11 @@ unsigned short hz_update_crc16_sick( unsigned short crc16, unsigned char c, char
 
 unsigned short hz_calc_crc16_sick( const unsigned char *pSrc, unsigned int len, unsigned short crc16 )
 {
+    unsigned int   i            = 0;
 			 char  prev_byte	= 0x00;
 	unsigned short crc		    = crc16;
 
-	for ( unsigned int i=0; i<len; i++ ) {
+	for ( i=0; i<len; i++ ) {
 		crc	        = hz_update_crc16_sick(crc, pSrc[i], prev_byte);
 		prev_byte	= pSrc[i];
     }
@@ -409,12 +424,13 @@ static PyObject * _crc16_sick(PyObject *self, PyObject *args)
 
 void init_crc16_dnp_tab( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned short crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = (unsigned short) i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x0001 ) crc = ( crc >> 1 ) ^ HZ16_POLYNOMIAL_DNP;
             else                      crc =   crc >> 1;
             c = c >> 1;
@@ -441,9 +457,10 @@ unsigned short hz_update_crc16_dnp( unsigned short crc16, unsigned char c )
 
 unsigned short hz_calc_crc16_dnp( const unsigned char *pSrc, unsigned int len, unsigned short crc16)
 {
+    unsigned int i = 0;
 	unsigned short crc = crc16;
     
-    for ( unsigned int i=0; i<len; i++ ) {
+    for ( i=0; i<len; i++ ) {
         crc	= hz_update_crc16_dnp(crc, pSrc[i]);
     }
     return ~crc;
@@ -512,7 +529,7 @@ PyInit__crc16(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.4");
+    PyModule_AddStringConstant(m, "__version__", "0.0.5");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

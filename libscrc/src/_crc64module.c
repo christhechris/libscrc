@@ -4,12 +4,14 @@
 *                                           All Rights Reserved
 * File    : _crc64module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.1
+* Version : V0.0.2
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-19 13:17PM
+*                       2017-08-21 [Heyn] Optimization code for the C99 standard.
+*                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
 *
 *********************************************************************************************************
 */
@@ -37,11 +39,12 @@ unsigned long long      crc_tab64_ecma182[256]  = {0x00000000};
 
 void init_crc64_iso_table( void ) 
 {
+    unsigned int i = 0, j = 0;
 	unsigned long long crc;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = (unsigned long long) i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( crc & 0x0000000000000001L ) {
                 crc = ( crc >> 1 ) ^ HZ64_POLYNOMIAL_ISO;
             } else {
@@ -74,10 +77,13 @@ unsigned long long hz_update_crc64_iso( unsigned long long crc64, unsigned char 
 
 unsigned long long hz_calc_crc64_iso( const unsigned char *pSrc, unsigned int len, unsigned long long crc64 ) 
 {
+    unsigned int i = 0;
     unsigned long long crc = crc64;
-	for(unsigned int i=0; i<len; i++) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc64_iso(crc, pSrc[i]);
-	}
+    }
+
 	return crc;
 }
 
@@ -109,12 +115,13 @@ static PyObject * _crc64_iso(PyObject *self, PyObject *args)
 */
 void init_crc64_ecma182_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned long long crc,c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
 		crc = 0;
 		c	= ((unsigned long long) i) << 56;
-        for (unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
 			if ( (crc ^ c) & 0x8000000000000000L ) {
                 crc = ( crc << 1 ) ^ HZ64_POLYNOMIAL_ECMA182;
             } else {
@@ -150,9 +157,10 @@ unsigned long long hz_update_crc64_ecma182( unsigned long long crc64, unsigned c
 
 unsigned long long hz_calc_crc64_ecma182( const unsigned char *pSrc, unsigned int len, unsigned long long crc64 ) 
 {
+    unsigned int i = 0;
     unsigned long long crc = crc64;
 
-	for ( unsigned int i=0; i<len; i++ ) {
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc64_ecma182(crc, pSrc[i]);
 	}
 	crc ^= 0xFFFFFFFFFFFFFFFF;
@@ -218,7 +226,7 @@ PyInit__crc64(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.1");
+    PyModule_AddStringConstant(m, "__version__", "0.0.2");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

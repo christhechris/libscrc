@@ -4,13 +4,15 @@
 *                                           All Rights Reserved
 * File    : _crc32module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.3
+* Version : V0.0.4
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-09 16:39PM
 *                       2017-08-17 [Heyn] Optimized Code.
+*                       2017-08-21 [Heyn] Optimization code for the C99 standard.
+*                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
 *
 *********************************************************************************************************
 */
@@ -38,12 +40,13 @@ static unsigned int     crc_tab32_crc[256]      = {0x00000000};
 
 void init_crc32_fsc_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned int crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
 		crc = 0;
 		c	= (( unsigned int ) i) << 24;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( (crc ^ c) & 0x80000000L ) {
                 crc = ( crc << 1 ) ^ HZ32_POLYNOMIAL_FSC;
             } else {
@@ -80,8 +83,10 @@ unsigned int hz_update_crc32_fsc( unsigned int crc32, unsigned char c )
 
 unsigned int hz_calc_crc32_fsc( const unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
 {
+    unsigned int i = 0;
     unsigned int crc = crc32;
-	for(unsigned int i=0; i<len; i++) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc32_fsc(crc, pSrc[i]);
 	}
 	return crc;
@@ -115,11 +120,12 @@ static PyObject * _crc32_fsc(PyObject *self, PyObject *args)
 */
 void init_crc32_table( void ) 
 {
+    unsigned int i = 0, j = 0;
     unsigned int crc = 0x00000000L;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
             if ( crc & 0x00000001L ) {
                 crc = ( crc >> 1 ) ^ HZ32_POLYNOMIAL_CRC;
             } else {
@@ -148,9 +154,10 @@ unsigned int hz_update_crc32( unsigned int crc32, unsigned char c )
 
 unsigned int hz_calc_crc32( const unsigned char *pSrc, unsigned int len, unsigned int crc32 ) 
 {
+    unsigned int i = 0;
     unsigned int crc = crc32;
 
-	for ( unsigned int i=0; i<len; i++ ) {
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc32(crc, pSrc[i]);
 	}
 	crc ^= 0xFFFFFFFFL;
@@ -216,7 +223,7 @@ PyInit__crc32(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.3");
+    PyModule_AddStringConstant(m, "__version__", "0.0.4");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

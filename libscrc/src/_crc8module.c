@@ -4,13 +4,15 @@
 *                                           All Rights Reserved
 * File    : _crc8module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.3
+* Version : V0.0.4
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
 * ---------------
 *		New Create at 	2017-08-10 08:42AM
-*                       2017-08-17 [Heyn] Optimized Code.
+*                       2017-08-17 [Heyn] Optimized code.
+*                       2017-08-21 [Heyn] Optimization code for the C99 standard.
+*                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
 *
 *********************************************************************************************************
 */
@@ -30,9 +32,10 @@ static unsigned char	crc_tab8_verb[256]      = {0x00};
  */
 unsigned char hz_calc_crc8_bcc( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
+    unsigned int i = 0;
     unsigned char crc = crc8;
 
-	for ( unsigned int i=0; i<len; i++ ) {
+	for ( i=0; i<len; i++ ) {
 		crc ^= pSrc[i];
     }
 
@@ -45,9 +48,10 @@ unsigned char hz_calc_crc8_bcc( const unsigned char *pSrc, unsigned int len, uns
  */
 unsigned char hz_calc_crc8_lrc( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
+    unsigned int i = 0;
     unsigned char crc = crc8;
 
-	for ( unsigned int i=0; i<len; i++ ) {
+	for ( i=0; i<len; i++ ) {
 		crc += pSrc[i];
 	}
     crc = (~crc) + 0x01;
@@ -57,12 +61,13 @@ unsigned char hz_calc_crc8_lrc( const unsigned char *pSrc, unsigned int len, uns
 
 void init_crc8_verb_table(void)
 {
+    unsigned int i = 0, j = 0;
     unsigned char crc, c;
 
-    for ( unsigned int i=0; i<256; i++ ) {
+    for ( i=0; i<256; i++ ) {
         crc = 0;
         c   = i;
-        for ( unsigned int j=0; j<8; j++ ) {
+        for ( j=0; j<8; j++ ) {
 			if ((crc ^ c) & 0x01) {
 				crc = crc >> 0x01;
 				crc = crc ^ 0x8C;
@@ -86,8 +91,10 @@ unsigned char hz_update_crc8_verb( unsigned char crc8, unsigned char c )
 
 unsigned char hz_calc_crc8_verb( const unsigned char *pSrc, unsigned int len, unsigned char crc8 ) 
 {
+    unsigned int i = 0;
     unsigned char crc = crc8;
-	for ( unsigned int i=0; i<len; i++ ) {
+
+	for ( i=0; i<len; i++ ) {
 		crc = hz_update_crc8_verb(crc, pSrc[i]);
 	}
 	return crc;
@@ -216,7 +223,7 @@ PyInit__crc8(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.3");
+    PyModule_AddStringConstant(m, "__version__", "0.0.4");
     PyModule_AddStringConstant(m, "__author__",  "Heyn");
 
     return m;

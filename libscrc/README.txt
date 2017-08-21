@@ -25,6 +25,11 @@ Installation
     # CC=gcc LDSHARED='gcc -shared' python setup.py install
     # CC=gcc LDSHARED='gcc -shared' python setup.py build bdist_wheel
 
+    [Linux]
+    # vim setup.cfg
+    universal=1
+    plat-name=manylinux1_x86_64
+
 -----
 Usage
 -----

@@ -126,8 +126,10 @@ class PBoxWebAPI:
             2017-08-03 V1.2 [Heyn] New url params
         """
         self.url = url + '/cgi-bin/'
-        if ERROR_CODE in self.logininit(password=password):
+        ret = self.logininit(password=password)
+        if ERROR_CODE in ret:
             return False
+        self.token = ret['token']
         if SUCCESS_CODE in self.loginverify():
             return True
         return False
@@ -144,7 +146,6 @@ class PBoxWebAPI:
                    'ChannelName=' + name,
                    'ChannelConf=' + ';'.join(items),
                    'DeviceCFreq=' + str(freq)]
-
         cid = msg_register('POST', 'AddChannel.cgi')(lambda x, y: '&'.join(y))(self, payload)
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, payload)
         self.jcid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['_id']) if isinstance(cid, dict) is False else cid

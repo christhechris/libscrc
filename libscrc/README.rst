@@ -84,5 +84,19 @@ Example
     crc64 = libscrc.iso(b'1234')
     crc64 = libscrc.ecma182(b'1234')
 
+V0.1.2 (2017-08-22)
++++++++++++++++++++
+**Platform Support**
+  * Win32
+  * Linux_x86_64
+  * MacOSX_10_6_intel
+  * ARMv7 (Toradex Ixora iMX6 Linux-4.1.41)
 
+**Bugfixes**
+  * Coding C99 standard.
+  * Python/C API parsing arguments type error in linux.
+
+V0.1.1 (2017-08-20)
++++++++++++++++++++
+* New CRC16-NDP and CRC16-SICK
 

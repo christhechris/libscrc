@@ -4,7 +4,7 @@
 *                                           All Rights Reserved
 * File    : _crc8module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.4
+* Version : V0.1.0
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
@@ -13,6 +13,11 @@
 *                       2017-08-17 [Heyn] Optimized code.
 *                       2017-08-21 [Heyn] Optimization code for the C99 standard.
 *                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
+*                       2017-08-22 [Heyn] Bugfixes Parsing arguments
+*                                         Change PyArg_ParseTuple(* , "y#|I")
+*                                         To     PyArg_ParseTuple(* , "y#|B")
+*                                         "B" : Convert a Python integer to a tiny int without overflow
+*                                               checking, stored in a C unsigned char.
 *
 *********************************************************************************************************
 */
@@ -109,10 +114,10 @@ static PyObject * _crc8_intel(PyObject *self, PyObject *args)
     unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "y#|B", &data, &data_len, &crc8))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "s#|B", &data, &data_len, &crc8))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -129,10 +134,10 @@ static PyObject * _crc8_bcc(PyObject *self, PyObject *args)
     unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "y#|B", &data, &data_len, &crc8))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "s#|B", &data, &data_len, &crc8))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -149,10 +154,10 @@ static PyObject * _crc8_lrc(PyObject *self, PyObject *args)
     unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "y#|B", &data, &data_len, &crc8))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "s#|B", &data, &data_len, &crc8))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -169,10 +174,10 @@ static PyObject * _crc8_verb(PyObject *self, PyObject *args)
     unsigned char result  = 0x00;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "y#|B", &data, &data_len, &crc8))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc8))
+    if (!PyArg_ParseTuple(args, "s#|B", &data, &data_len, &crc8))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
@@ -223,7 +228,7 @@ PyInit__crc8(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.4");
+    PyModule_AddStringConstant(m, "__version__", "0.1.0");
     PyModule_AddStringConstant(m, "__author__",  "Heyn");
 
     return m;

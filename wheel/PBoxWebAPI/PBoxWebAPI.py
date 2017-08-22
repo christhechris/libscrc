@@ -12,7 +12,9 @@
 #                            BugFix001: newchannel\newdevice\newitem return True or False.
 #                            New : alterchannel() alterdevice() alteritem() lanipaddress()
 #                            New : cloudaddress() download2app() reboot() newpassword()
-#
+#           2017-08-22 Wheel Ver:0.0.7 [Heyn]
+#                            Modify newchannel(self, items, name='default')
+#                            to     newchannel(self, items, freq=5000, name='default')
 
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -131,7 +133,7 @@ class PBoxWebAPI:
         return False
 
     @catch_exception
-    def newchannel(self, items, name='default'):
+    def newchannel(self, items, freq=5000, name='default'):
         """ PBox new a channel.
         Items params:
             ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '500']
@@ -140,7 +142,8 @@ class PBoxWebAPI:
 
         payload = ['TokenNumber=' + self.token,
                    'ChannelName=' + name,
-                   'ChannelConf=' + ';'.join(items)]
+                   'ChannelConf=' + ';'.join(items),
+                   'DeviceCFreq=' + str(freq)]
 
         cid = msg_register('POST', 'AddChannel.cgi')(lambda x, y: '&'.join(y))(self, payload)
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, payload)

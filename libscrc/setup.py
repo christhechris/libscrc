@@ -14,6 +14,8 @@ from codecs import open
 #           2017-08-17 Wheel Ver:0.0.3 [Heyn] Optimized Code.
 #                      Wheel Ver:0.0.4 [Heyn] New CRC16-SICK / CRC16-DNP.
 #           2017-08-17 Wheel Ver:0.0.5 [Heyn] New CRC64-ISO / CRC64-ECMA182.
+#           2017-08-22 Wheel Ver:0.1.2 [Heyn] Optimization code for the C99 standard.
+#
 
 """
 See:
@@ -30,7 +32,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.1.1',
+    version='0.1.2',
 
     description='Library for calculating CRC8/CRC16/CRC32/CRC64',
     long_description=long_description,
@@ -42,7 +44,7 @@ setup(
 
     license='MIT',
 
-    platforms ='any',
+    platforms='any',
 
     classifiers=[
         # How mature is this project? Common values are
@@ -60,21 +62,20 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        # 'Programming Language :: Python :: 2',
-        # 'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
+        # 'Programming Language :: Python :: 3.3',
+        # 'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: Implementation :: PyPy',
     ],
 
     # What does your project relate to?
     keywords=['CRC8', 'CRC16', 'CCITT', 'XMODEM', 'KERMIT', 'CRC32', 'CRC64'],
 
-    # packages=find_packages(exclude=['libscrc.']),
     packages=['libscrc'],
     ext_modules=[Extension('libscrc._crc8', sources=['src/_crc8module.c']),
                  Extension('libscrc._crc16', sources=['src/_crc16module.c']),

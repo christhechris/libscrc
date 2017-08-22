@@ -4,7 +4,7 @@
 *                                           All Rights Reserved
 * File    : _crc16module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.0.5
+* Version : V0.1.0
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
@@ -14,6 +14,11 @@
 *                                         Wheel 0.0.4 New CRC16-SICK / CRC16-DNP
 *                       2017-08-21 [Heyn] Optimization code for the C99 standard.
 *                                         for ( unsigned int i=0; i<256; i++ ) -> for ( i=0; i<256; i++ )
+*                       2017-08-22 [Heyn] Bugfixes Parsing arguments
+*                                         Change PyArg_ParseTuple(* , "y#|I")
+*                                         To     PyArg_ParseTuple(* , "y#|H")
+*                                         "H" : Convert a Python integer to a C unsigned short int,
+*                                               without overflow checking.
 *
 *********************************************************************************************************
 */
@@ -109,16 +114,16 @@ static PyObject * _crc16_modbus(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_crc16_a001(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /*
@@ -189,16 +194,16 @@ static PyObject * _crc16_ibm(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_crc16_ibm(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /*
@@ -259,16 +264,16 @@ static PyObject * _crc16_xmodem(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_ccitt(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 static PyObject * _crc16_ccitt(PyObject *self, PyObject *args)
@@ -279,16 +284,16 @@ static PyObject * _crc16_ccitt(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_ccitt(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /*
@@ -347,16 +352,16 @@ static PyObject * _crc16_kermit(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_ccitt_kermit(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /*
@@ -404,16 +409,16 @@ static PyObject * _crc16_sick(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_crc16_sick(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /*
@@ -474,16 +479,16 @@ static PyObject * _crc16_dnp(PyObject *self, PyObject *args)
     unsigned short result = 0x0000;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "y#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "s#|I", &data, &data_len, &crc16))
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
         return NULL;
 #endif /* PY_MAJOR_VERSION */
 
     result = hz_calc_crc16_dnp(data, data_len, crc16);
 
-    return Py_BuildValue("I", result);
+    return Py_BuildValue("H", result);
 }
 
 /* method table */
@@ -529,7 +534,7 @@ PyInit__crc16(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.0.5");
+    PyModule_AddStringConstant(m, "__version__", "0.1.0");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

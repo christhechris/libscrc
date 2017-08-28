@@ -1,4 +1,4 @@
-# -*- coding:utf8 -*-
+# -*- coding:utf-8 -*-
 """ Setup script for CRC8/CRC16/CRC32/CRC64 library. """
 from os import path
 from setuptools import setup, find_packages, Extension

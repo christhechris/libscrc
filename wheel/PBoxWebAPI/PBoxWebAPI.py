@@ -15,12 +15,20 @@
 #           2017-08-22 Wheel Ver:0.0.7 [Heyn]
 #                            Modify newchannel(self, items, name='default')
 #                            to     newchannel(self, items, freq=5000, name='default')
+#           2017-08-23 Wheel Ver:0.0.9 [Heyn]
+#                            New : Get channel id in self.login funciotn.
+#                            New function : Delchannel befor Newchannel
+#           2017-08-25 Wheel Ver:0.1.1 [Heyn]
+#                            New : get_pansert() funciotn.
+#                            TODO: get_siap()
+#
 
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
 # (3) [PyLint Message: See web: http://pylint-messages.wikidot.com/]
 
+import re
 import json
 import random
 import string
@@ -60,11 +68,13 @@ def msg_register(method, cgi):
             elif payload is not False and method == 'GET':
                 # 2017-08-01 for https verify = False
                 ret = self.sess.get(self.url + cgi, headers=header, timeout=3, verify=False)
-
+            logging.debug('msg_register ret = %s, text = %s', ret, str(ret.text).strip('\n'))
             if 'Response [200]' in str(ret) and 'SUCCESS' in ret.text:
                 return 'SUCCESS'
-            elif 'Response [200]' in str(ret) and ret.text != 'ERROR':
+            elif 'Response [200]' in str(ret) and 'ERROR' not in ret.text:
                 return 'SUCCESS' if ret.text == '' else json.loads(ret.text)
+            elif 'Response [200]' in str(ret) and 'ERROR' in ret.text:
+                return 'ERROR'
             else:
                 return '[ERROR] %s'%func
         return wrapper
@@ -89,7 +99,7 @@ def print_pretty(title):
 
 class PBoxWebAPI:
     """PBox WebMc API Class."""
-    def __init__(self, url='http://192.168.3.111', debugLevel=logging.ERROR):
+    def __init__(self, url='http://192.168.3.111', debugLevel=logging.DEBUG):
         self.url = url + '/cgi-bin/'
         requests.packages.urllib3.disable_warnings()    # 2017-08-01 for https verify = False
         self.sess = requests.session()
@@ -130,9 +140,14 @@ class PBoxWebAPI:
         if ERROR_CODE in ret:
             return False
         self.token = ret['token']
-        if SUCCESS_CODE in self.loginverify():
-            return True
-        return False
+        if ERROR_CODE in self.loginverify():
+            return False
+        # Get PBox Configure Information.
+        self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, [])
+
+        if 'pboxsetup' in self.pboxinfo and 'model' in self.pboxinfo['pboxsetup']:
+            self.jcid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['_id'])
+        return True
 
     @catch_exception
     def newchannel(self, items, freq=5000, name='default'):
@@ -142,6 +157,10 @@ class PBoxWebAPI:
             ['Modbus-TCP', '192.168.3.1', '500', '500']
         """
 
+        if re.match(r'1|2', self.jcid['id']):
+            self.delchannel()
+            logging.info('Delete PBox Channel ID=%s', self.jcid)
+
         payload = ['TokenNumber=' + self.token,
                    'ChannelName=' + name,
                    'ChannelConf=' + ';'.join(items),
@@ -150,7 +169,7 @@ class PBoxWebAPI:
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, payload)
         self.jcid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['_id']) if isinstance(cid, dict) is False else cid
         logging.info('PBox Channel ID=%s', self.jcid)
-        return isinstance(cid, dict)
+        return isinstance(cid, dict) ^ (re.match('^[A-Za-z]', name) is None)
 
     @catch_exception
     def alterchannel(self, items, name='default'):
@@ -180,7 +199,7 @@ class PBoxWebAPI:
         self.pboxinfo = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, params)
         self.jdid = dict(id=dict(self.pboxinfo)['pboxsetup']['model']['device']['_id']) if isinstance(did, dict) is False else did
         logging.info('PBox Device ID=%s', self.jdid)
-        return isinstance(did, dict)
+        return isinstance(did, dict) ^ (re.match('^[A-Za-z]', name) is None)
 
     @catch_exception
     def alterdevice(self, name='default'):
@@ -216,7 +235,22 @@ class PBoxWebAPI:
         params.extend(items)
 
         iid = msg_register('POST', 'AddDataitem.cgi')(lambda x, y: '&'.join(y))(self, list(map(lambda x: 'item=%s'%x, params)))
-        return isinstance(iid, dict)
+
+        #                                   True & False Table
+        #                                 -----------------------
+        #       [WebMc] : Error=0   OK=1    [Name] : Digital=0 Char=1   [Alias] : Digital=0 Char=1
+        #
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   0   |   0  |   0   |  False |   0   |   0  |   1   |  True  |   0   |   1  |   0   |  True  |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   0   |   1  |   1   |  True  |   1   |   0  |   0   |  True  |   1   |   0  |   1   |  False |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   1   |   1  |   0   |  False |   1   |   1  |   1   |  False |       |      |       |        |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+
+        return isinstance(iid, dict) ^ ((re.match('^[A-Za-z]', items[0]) is None) or (re.match('^[A-Za-z]', items[1]) is None))
 
     @catch_exception
     def alteritem(self, items, itemid=None):
@@ -272,7 +306,6 @@ class PBoxWebAPI:
             iids.append(dict(self.pboxinfo)['pboxsetup']['model']['device']['commDataItems'][0]['dataItem'][index]['_id'])
 
         payload = ['TokenNumber=' + self.token, 'DelItemsID=' + ','.join(iids), 'DelDeviceID=' + self.jdid['id']]
-
         return '&'.join(payload)
 
     @msg_register('POST', 'CloudServerConfig.cgi')
@@ -298,22 +331,60 @@ class PBoxWebAPI:
         params['ConfirmPassword'] = self.passwordmd5
         return params
 
-    @msg_register('POST', 'IPConfig.cgi')
-    def lanipaddress(self, ipaddr='192.168.3.77', netmask='255.255.255.0'):
+    @msg_register('POST', 'LocalIPConfig.cgi')
+    def lanipaddress(self, ipaddr='192.168.3.77'):
         """Change LAN IP Address."""
         params = collections.OrderedDict(TokenNumber=self.token)
-        params['DHCPMode'] = ''
-        params['NetType'] = 'wan'
+        params['IPAddress'] = ipaddr
+        return params
+
+    @msg_register('POST', 'IPConfig.cgi')   
+    def wanipaddress(self, dhcp='YES', ipaddr='192.168.3.77', netmask='255.255.255.0'):
+        """Change WAN IP Address."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['NetMode'] = 'gateway'
+        params['DHCPMode'] = dhcp.upper()
+        if dhcp.upper() == 'YES':
+            return params
         params['IPAddress'] = ipaddr
         params['SubnetMask'] = netmask
         params['Gateway'] = '10.10.10.10'
         params['DNSAddress'] = '8.8.8.8'
         return params
 
+    @msg_register('POST', 'SwitchInfo.cgi')
+    def netswitch(self, mode='gateway'):
+        """Switch gateway 4G or wifi."""
+        params = collections.OrderedDict(TokenNumber=self.token)
+        params['NetMode'] = params['ModeType'] = mode if mode in ('gateway', '4G', 'wifi') else 'gateway'
+        print(params)
+        return params
+
     @msg_register('POST', 'RebootArm.cgi')
     def reboot(self):
         """Exec configuration."""
-        params = collections.OrderedDict(TokenNumber=self.token)
-        params['restart'] = 'restart'
-        return params
+        return collections.OrderedDict(TokenNumber=self.token, restart='restart')
 
+    @msg_register('POST', 'RefreshDataitem.cgi')
+    def __siap(self):
+        """SIAP DataItems."""
+        return collections.OrderedDict(TokenNumber=self.token, item='liaoCang')
+
+    @msg_register('POST', 'Pboxgetseriadata.cgi')
+    def __panasert(self):
+        """Panasonic Sert DataItems."""
+        return collections.OrderedDict(TokenNumber=self.token, item='panasert')
+
+    def get_siap(self):
+        """Get SIAP DataItems."""
+        dataitems = self.__siap()
+        try:
+            items = dataitems['items'] if dataitems['status'] == '0' else []
+        except BaseException:
+            return []
+        return items
+
+    def get_pansert(self):
+        """Get Panasonic Sert(TCP) DataItems."""
+        dataitems = self.__panasert()
+        return dataitems['items'] if dataitems['status'] == '0' else []

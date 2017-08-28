@@ -7,7 +7,8 @@
 # Program:  PBox WebMc API.
 # History:  2017-07-27 V1.0 [Heyn]
 #           2017-08-07 Wheel Ver:0.0.6 [Heyn]
-#
+#           2017-08-24 Wheel Ver:0.1.0 [Heyn] New webdeldevice interface.
+#           2017-08-25 Wheel Ver:0.1.1 [Heyn] New webpansert & websiap interface.
 
 from .PBoxWebAPI import PBoxWebAPI
 from .PBoxWebAPI import print_pretty
@@ -33,6 +34,7 @@ webalterdevice  = originInstance.alterdevice
 webalteritem    = originInstance.alteritem
 
 webdelchannel   = originInstance.delchannel
+webdeldevice    = originInstance.deldevice
 webdelitems     = originInstance.delitems
 
 webcloudaddress = originInstance.cloudaddress
@@ -41,5 +43,12 @@ armreboot       = originInstance.reboot
 
 webnewpassword  = originInstance.newpassword
 weblanip        = originInstance.lanipaddress
+webwanip        = originInstance.wanipaddress
+webnet          = originInstance.netswitch
 
 imageReport     = print_pretty
+
+webpansert      = originInstance.get_pansert
+websiap         = originInstance.get_siap
+
+

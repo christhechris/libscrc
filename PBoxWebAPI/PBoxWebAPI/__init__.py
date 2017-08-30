@@ -13,6 +13,14 @@
 from .PBoxWebAPI import PBoxWebAPI
 from .PBoxWebAPI import print_pretty
 
+# pylint: disable=C0103, C0326
+
+__all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
+           'webdelchannel', 'webdeldevice', 'webdelitems',
+           'webcloudaddress', 'webdownload', 'armreboot', 'webnewpassword',
+           'weblanip', 'webwanip', 'webnet',
+           'imageReport', 'webpansert', 'websiap']
+
 instanceList = []
 
 def new_instance():
@@ -20,9 +28,9 @@ def new_instance():
     instanceList.append(newInstance)
     return newInstance
 
-originInstance = new_instance()
+originInstance  = new_instance()
 
-weblogin   = originInstance.login
+weblogin        = originInstance.login
 
 webnewchannel   = originInstance.newchannel
 webnewdevice    = originInstance.newdevice
@@ -49,5 +57,3 @@ imageReport     = print_pretty
 
 webpansert      = originInstance.get_pansert
 websiap         = originInstance.get_siap
-
-

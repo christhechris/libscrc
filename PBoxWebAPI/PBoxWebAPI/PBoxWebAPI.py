@@ -32,7 +32,7 @@ import re
 import json
 import hashlib
 import logging
-import collections
+from collections import OrderedDict
 
 import requests
 from prettytable import  PrettyTable
@@ -133,7 +133,7 @@ class PBoxWebAPI:
 
         pwdmd5 = hashlib.md5()
         pwdmd5.update(password.encode('UTF-8'))
-        params = collections.OrderedDict()
+        params = OrderedDict()
         params['UserName'] = self.username = username
         params['PassWord'] = self.passwordmd5 = pwdmd5.hexdigest()
         return params
@@ -141,7 +141,7 @@ class PBoxWebAPI:
     @msg_register('POST', 'Verifypasswd.cgi')
     def __loginverify(self):
         """Login Verify"""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['UserName'] = self.username
         params['PassWord'] = self.passwordmd5
         return params
@@ -225,7 +225,7 @@ class PBoxWebAPI:
     @catch_exception
     def newdevice(self, name='default'):
         """PBox New Device."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['DeviceName'] = name
         params['ChannelID'] = self.jcid['id']
         params['DeviceIP'] = '0.0.0.0'
@@ -242,7 +242,7 @@ class PBoxWebAPI:
     @catch_exception
     def alterdevice(self, name='default'):
         """PBox Alter Device Name."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['DeviceName'] = name
         params['ChannelID'] = self.jcid['id']
         params['DeviceID'] = self.jdid['id']
@@ -252,7 +252,7 @@ class PBoxWebAPI:
     @catch_exception
     def delchannel(self):
         """PBox Delete Channel"""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['DelChannelID'] = self.jcid['id']
         ret = msg_register('POST', 'DeleteChannel.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -260,7 +260,7 @@ class PBoxWebAPI:
     @catch_exception
     def deldevice(self):
         """Delete Device."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['DelChannelID'] = self.jcid['id']
         params['DelDeviceID'] = self.jdid['id']
         ret = msg_register('POST', 'DeleteDevice.cgi')(lambda x, y: y)(self, params)
@@ -276,20 +276,20 @@ class PBoxWebAPI:
         params.extend(items)
 
         ret = msg_register('POST', 'AddDataitem.cgi')(lambda x, y: '&'.join(y))(self, list(map(lambda x: 'item=%s'%x, params)))
-# +-----------------------------------------------------------------------------------------------+
-#                                   True & False Table
-#                                 -----------------------
-#       [WebMc] : Error=0   OK=1    [Name] : Digital=1 Char=0   [Alias] : Digital=1 Char=0
-#
-# +----------------------+--------+----------------------+--------+----------------------+--------+
-# | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result |
-# +----------------------+--------+----------------------+--------+----------------------+--------+
-# |   0   |   0  |   0   |  False |   0   |   0  |   1   |  True  |   0   |   1  |   0   |  True  |
-# +----------------------+--------+----------------------+--------+----------------------+--------+
-# |   0   |   1  |   1   |  True  |   1   |   0  |   0   |  True  |   1   |   0  |   1   |  False |
-# +----------------------+--------+----------------------+--------+----------------------+--------+
-# |   1   |   1  |   0   |  False |   1   |   1  |   1   |  False |       |      |       |        |
-# +----------------------+--------+----------------------+--------+----------------------+--------+
+        # +-----------------------------------------------------------------------------------------------+
+        # |                                  True & False Table                                           |
+        # +                                -----------------------                                        +
+        # |      [WebMc] : Error=0   OK=1    [Name] : Digital=1 Char=0   [Alias] : Digital=1 Char=0       |
+        # |                                                                                               |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result | WebMc | Name | Alias | Result |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   0   |   0  |   0   |  False |   0   |   0  |   1   |  True  |   0   |   1  |   0   |  True  |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   0   |   1  |   1   |  True  |   1   |   0  |   0   |  True  |   1   |   0  |   1   |  False |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
+        # |   1   |   1  |   0   |  False |   1   |   1  |   1   |  False |       |      |       |        |
+        # +----------------------+--------+----------------------+--------+----------------------+--------+
         # return (ret.get('result') == SUCCESS_CODE) ^ ((re.match('^[A-Za-z]', items[0]) is None) or (re.match('^[A-Za-z]', items[1]) is None))
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
@@ -333,7 +333,7 @@ class PBoxWebAPI:
     @catch_exception
     def download2app(self):
         """Exe configuration."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['LoadDataUp'] = '1'
         ret = msg_register('POST', 'LoadData.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -341,7 +341,7 @@ class PBoxWebAPI:
     @catch_exception
     def newpassword(self, newpassword='000000'):
         """Change Password"""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['OldPassword'] = self.password
         md5 = hashlib.md5()
         md5.update(newpassword.encode('UTF-8'))
@@ -353,7 +353,7 @@ class PBoxWebAPI:
     @catch_exception
     def lanipaddress(self, ipaddr='192.168.3.222'):
         """Change LAN IP Address."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['IPAddress'] = ipaddr
         ret = msg_register('POST', 'LocalIPConfig.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -361,7 +361,7 @@ class PBoxWebAPI:
     @catch_exception
     def wanipaddress(self, dhcp='YES', ipaddr='192.168.3.77', netmask='255.255.255.0', gateway='192.168.3.1'):
         """Change WAN IP Address."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['NetMode'] = 'gateway'
         params['DHCPMode'] = dhcp.upper()
         if dhcp.upper() == 'NO':
@@ -376,7 +376,7 @@ class PBoxWebAPI:
     @catch_exception
     def netswitch(self, mode='gateway'):
         """Switch gateway 4G or wifi."""
-        params = collections.OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token)
         params['NetMode'] = params['ModeType'] = mode if mode in ('gateway', '4G', 'wifi') else 'gateway'
         ret = msg_register('POST', 'SwitchInfo.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -384,18 +384,18 @@ class PBoxWebAPI:
     @catch_exception
     def reboot(self):
         """Exec configuration."""
-        ret = msg_register('POST', 'RebootArm.cgi')(lambda x, y: y)(self, collections.OrderedDict(TokenNumber=self.__token, restart='restart'))
+        ret = msg_register('POST', 'RebootArm.cgi')(lambda x, y: y)(self, OrderedDict(TokenNumber=self.__token, restart='restart'))
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
     @msg_register('POST', 'RefreshDataitem.cgi')
     def __siap(self):
         """SIAP DataItems."""
-        return collections.OrderedDict(TokenNumber=self.__token, item='liaoCang')
+        return OrderedDict(TokenNumber=self.__token, item='liaoCang')
 
     @msg_register('POST', 'Pboxgetseriadata.cgi')
     def __panasert(self):
         """Panasonic Sert DataItems."""
-        return collections.OrderedDict(TokenNumber=self.__token, item='panasert')
+        return OrderedDict(TokenNumber=self.__token, item='panasert')
 
     @catch_exception
     def get_siap(self):
@@ -408,3 +408,6 @@ class PBoxWebAPI:
         """Get Panasonic Sert(TCP) DataItems."""
         dataitems = self.__panasert()
         return dataitems['detail'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
+
+
+    

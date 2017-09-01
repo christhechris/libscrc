@@ -17,6 +17,7 @@ from .PBoxWebAPI import print_pretty
 
 __all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
            'webdelchannel', 'webdeldevice', 'webdelitems',
+           'webalterchannel', 'webalterdevice', 'webalteritem',
            'webcloudaddress', 'webdownload', 'armreboot', 'webnewpassword',
            'weblanip', 'webwanip', 'webnet',
            'imageReport', 'webpansert', 'websiap']

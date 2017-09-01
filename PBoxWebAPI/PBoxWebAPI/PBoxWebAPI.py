@@ -30,6 +30,7 @@
 
 import re
 import json
+import base64
 import hashlib
 import logging
 from collections import OrderedDict
@@ -136,11 +137,14 @@ class PBoxWebAPI:
         params = OrderedDict()
         params['UserName'] = self.username = username
         params['PassWord'] = self.passwordmd5 = pwdmd5.hexdigest()
+
+        self.password = password
         return params
 
     @msg_register('POST', 'Verifypasswd.cgi')
     def __loginverify(self):
         """Login Verify"""
+
         params = OrderedDict(TokenNumber=self.__token)
         params['UserName'] = self.username
         params['PassWord'] = self.passwordmd5
@@ -154,6 +158,9 @@ class PBoxWebAPI:
         self.url = url + '/cgi-bin/'
         ret = self.__logininit(username=username, password=password)
         if ERROR_CODE in ret.get('result', ERROR_CODE):
+            if ret.get('status') == '300':
+                self.__token = ret['detail']['token']
+                return True
             return False
 
         self.__token = ret['detail']['token']
@@ -338,17 +345,36 @@ class PBoxWebAPI:
         ret = msg_register('POST', 'LoadData.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
-    @catch_exception
-    def newpassword(self, newpassword='000000'):
-        """Change Password"""
-        params = OrderedDict(TokenNumber=self.__token)
-        params['OldPassword'] = self.password
+    def __getmd5(self, orgstr=''):
+        """Get """
         md5 = hashlib.md5()
-        md5.update(newpassword.encode('UTF-8'))
-        params['NewPassword'] = self.passwordmd5 = md5.hexdigest()
-        params['ConfirmPassword'] = self.passwordmd5
-        ret = msg_register('POST', 'PasswordConfig.cgi')(lambda x, y: y)(self, params)
-        return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
+        md5.update(orgstr.encode('UTF-8'))
+        return md5.hexdigest()
+
+    @catch_exception
+    def newpassword(self, newpassword='P@ssw0rd'):
+        """1st Change Password"""
+
+        params = OrderedDict(TokenNumber=self.__token)
+        params['OldPassword'] = self.__getmd5(self.password)
+        token_md5 = self.__getmd5(self.__token)
+
+        def __encryption(pwd, token):
+            for xxx in pwd:
+                tmp = ord(xxx)
+                for yyy in token:
+                    tmp = tmp ^ (ord(yyy) >> 2)
+                yield chr(tmp)
+
+        newpwd = base64.b64encode(bytes(''.join([x for x in __encryption(newpassword, token_md5)]), encoding='UTF-8'))
+
+        params['NewPassword'] = params['ConfirmPassword'] = str(newpwd, encoding='UTF-8').strip('=')
+        ret = msg_register('POST', 'Changeinitialpsswd.cgi')(lambda x, y: y)(self, params)
+
+        if ERROR_CODE in ret.get('result', ERROR_CODE):
+            logging.error('%s -- %s', params, newpassword)
+            return False
+        return True
 
     @catch_exception
     def lanipaddress(self, ipaddr='192.168.3.222'):
@@ -408,6 +434,3 @@ class PBoxWebAPI:
         """Get Panasonic Sert(TCP) DataItems."""
         dataitems = self.__panasert()
         return dataitems['detail'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
-
-
-    

@@ -24,6 +24,8 @@
 #           2017-08-28 Wheel Ver:0.1.5 [Heyn] Optimization code.
 #           2017-08-30 Wheel Ver:0.1.6 [Heyn] Optimization code msg_register()
 #           2017-09-04 Wheel Ver:0.1.9 [heyn] New add confpassword()
+#           2017-09-05 Wheel Ver:0.2.1 [heyn] Optimization code __siap() and __panasert()
+
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -54,7 +56,7 @@ def catch_exception(origin_func):
     return wrapper
 
 @catch_exception
-def msg_register(method, cgi):
+def msg_register(method, cgi, timeout=5):
     """Message register"""
     # pylint: disable=C0301
     def decorator(func):
@@ -68,11 +70,11 @@ def msg_register(method, cgi):
                 ret = self.sess.post(self.url + cgi,
                                      data=payload,
                                      headers=header,
-                                     timeout=5,
+                                     timeout=timeout,
                                      verify=False)
             elif payload is not False and method == 'GET':
                 # 2017-08-01 for https verify = False
-                ret = self.sess.get(self.url + cgi, headers=header, timeout=3, verify=False)
+                ret = self.sess.get(self.url + cgi, headers=header, timeout=timeout, verify=False)
             else:
                 return ERROR_CODE
 
@@ -296,7 +298,7 @@ class PBoxWebAPI:
         # +----------------------+--------+----------------------+--------+----------------------+--------+
         # |   0   |   1  |   1   |  True  |   1   |   0  |   0   |  True  |   1   |   0  |   1   |  False |
         # +----------------------+--------+----------------------+--------+----------------------+--------+
-        # |   1   |   1  |   0   |  False |   1   |   1  |   1   |  False |       |      |       |        |
+        # |   1   |   1  |   0   |  False |   1   |   1  |   1   |  False |   -   |   -  |   -   |   -    |
         # +----------------------+--------+----------------------+--------+----------------------+--------+
         # return (ret.get('result') == SUCCESS_CODE) ^ ((re.match('^[A-Za-z]', items[0]) is None) or (re.match('^[A-Za-z]', items[1]) is None))
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -429,12 +431,16 @@ class PBoxWebAPI:
     @msg_register('POST', 'RefreshDataitem.cgi')
     def __siap(self):
         """SIAP DataItems."""
-        return OrderedDict(TokenNumber=self.__token, item='liaoCang')
+        params = OrderedDict(TokenNumber=self.__token)
+        params['item'] = 'liaoCang'
+        return params
 
-    @msg_register('POST', 'Pboxgetseriadata.cgi')
+    @msg_register('POST', 'Pboxgetseriadata.cgi', 20)
     def __panasert(self):
         """Panasonic Sert DataItems."""
-        return OrderedDict(TokenNumber=self.__token, item='panasert')
+        params = OrderedDict(TokenNumber=self.__token)
+        params['item'] = 'panasert'
+        return params
 
     @catch_exception
     def get_siap(self):
@@ -444,12 +450,6 @@ class PBoxWebAPI:
 
     @catch_exception
     def get_pansert(self):
-        """Get Panasonic Sert(TCP) DataItems."""
+        """Get Panasonic Sert(TCP or Serial) DataItems."""
         dataitems = self.__panasert()
-        return dataitems['detail'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
-
-
-if __name__ == '__main__':
-    WEB = PBoxWebAPI()
-    print(WEB.login(url='https://192.168.3.222', password='P@ssw0rd2'))
-    # print(WEB.newpassword('P@ssw0rd2'))
+        return dataitems['detail']['items'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []

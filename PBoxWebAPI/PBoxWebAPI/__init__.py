@@ -20,7 +20,7 @@ __all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
            'webalterchannel', 'webalterdevice', 'webalteritem',
            'webcloudaddress', 'webdownload', 'armreboot', 'webnewpassword',
            'weblanip', 'webwanip', 'webnet',
-           'imageReport', 'webpansert', 'websiap']
+           'imageReport', 'webpansert', 'websiap', 'webconfpassword']
 
 instanceList = []
 
@@ -49,7 +49,6 @@ webcloudaddress = originInstance.cloudaddress
 webdownload     = originInstance.download2app
 armreboot       = originInstance.reboot
 
-webnewpassword  = originInstance.newpassword
 weblanip        = originInstance.lanipaddress
 webwanip        = originInstance.wanipaddress
 webnet          = originInstance.netswitch
@@ -58,3 +57,6 @@ imageReport     = print_pretty
 
 webpansert      = originInstance.get_pansert
 websiap         = originInstance.get_siap
+
+webnewpassword  = originInstance.newpassword
+webconfpassword = originInstance.confpassword

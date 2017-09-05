@@ -23,6 +23,7 @@
 #                            TODO: get_siap()
 #           2017-08-28 Wheel Ver:0.1.5 [Heyn] Optimization code.
 #           2017-08-30 Wheel Ver:0.1.6 [Heyn] Optimization code msg_register()
+#           2017-09-04 Wheel Ver:0.1.9 [heyn] New add confpassword()
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -351,25 +352,37 @@ class PBoxWebAPI:
         md5.update(orgstr.encode('UTF-8'))
         return md5.hexdigest()
 
-    @catch_exception
-    def newpassword(self, newpassword='P@ssw0rd'):
-        """1st Change Password"""
-
+    def __generate_encryption_pwd(self, pwd='P@ssw0rd'):
+        """"""
         params = OrderedDict(TokenNumber=self.__token)
         params['OldPassword'] = self.__getmd5(self.password)
         token_md5 = self.__getmd5(self.__token)
-
         def __encryption(pwd, token):
             for xxx in pwd:
                 tmp = ord(xxx)
                 for yyy in token:
                     tmp = tmp ^ (ord(yyy) >> 2)
                 yield chr(tmp)
-
-        newpwd = base64.b64encode(bytes(''.join([x for x in __encryption(newpassword, token_md5)]), encoding='UTF-8'))
-
+        newpwd = base64.b64encode(bytes(''.join([x for x in __encryption(pwd, token_md5)]), encoding='UTF-8'))
         params['NewPassword'] = params['ConfirmPassword'] = str(newpwd, encoding='UTF-8').strip('=')
+        return params
+
+    @catch_exception
+    def newpassword(self, newpassword='P@ssw0rd'):
+        """1st Change Password"""
+        params = self.__generate_encryption_pwd(newpassword)
         ret = msg_register('POST', 'Changeinitialpsswd.cgi')(lambda x, y: y)(self, params)
+
+        if ERROR_CODE in ret.get('result', ERROR_CODE):
+            logging.error('%s -- %s', params, newpassword)
+            return False
+        return True
+
+    @catch_exception
+    def confpassword(self, newpassword='P@ssw0rd'):
+        """Configure login password"""
+        params = self.__generate_encryption_pwd(newpassword)
+        ret = msg_register('POST', 'PasswordConfig.cgi')(lambda x, y: y)(self, params)
 
         if ERROR_CODE in ret.get('result', ERROR_CODE):
             logging.error('%s -- %s', params, newpassword)
@@ -434,3 +447,9 @@ class PBoxWebAPI:
         """Get Panasonic Sert(TCP) DataItems."""
         dataitems = self.__panasert()
         return dataitems['detail'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
+
+
+if __name__ == '__main__':
+    WEB = PBoxWebAPI()
+    print(WEB.login(url='https://192.168.3.222', password='P@ssw0rd2'))
+    # print(WEB.newpassword('P@ssw0rd2'))

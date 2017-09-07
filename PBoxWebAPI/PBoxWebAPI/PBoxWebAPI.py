@@ -23,26 +23,35 @@
 #                            TODO: get_siap()
 #           2017-08-28 Wheel Ver:0.1.5 [Heyn] Optimization code.
 #           2017-08-30 Wheel Ver:0.1.6 [Heyn] Optimization code msg_register()
-#           2017-09-04 Wheel Ver:0.1.9 [heyn] New add confpassword()
-#           2017-09-05 Wheel Ver:0.2.1 [heyn] Optimization code __siap() and __panasert()
-
+#           2017-09-04 Wheel Ver:0.1.9 [Heyn] New add confpassword()
+#           2017-09-05 Wheel Ver:0.2.1 [Heyn] Optimization code __siap() and __panasert()
+#           2017-09-07 Wheel Ver:1.0.0 [Heyn] New class AESCipher for Openssl Encrypt & Decrypt
+#
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
 # (3) [PyLint Message: See web: http://pylint-messages.wikidot.com/]
-
+ 
 import re
 import json
-import base64
-import hashlib
+import string
 import logging
+
+from os import urandom
+from hashlib import md5
+from base64 import b64encode
+from base64 import b64decode
 from collections import OrderedDict
 
 import requests
+from Crypto.Cipher import AES
 from prettytable import  PrettyTable
 
+#################################################
 ERROR_CODE = 'ERROR'
 SUCCESS_CODE = 'SUCCESS'
+#################################################
+
 
 def catch_exception(origin_func):
     """Catch exception."""
@@ -114,6 +123,90 @@ def print_pretty(title):
         return wrapper
     return decorator
 
+
+
+BLOCK_SIZE = 16  # Bytes
+class AESCipher:
+    # pylint: disable=C0301
+    # pylint: disable=C0325
+    """ Implement openssl compatible AES-256 CBC mode encryption/decryption
+        This module provides encrypt() and decrypt() functions that are compatible with the openssl algorithms.
+    """
+
+    """
+    Usage:
+        c = AESCipher('password').encrypt('message')
+        m = AESCipher('password').decrypt(c)
+    Tested under Python 3.5 and PyCrypto 2.6.1.
+    """
+    def __init__(self, key):
+        self.__alphabet = string.ascii_letters
+        self.__key = md5(key.encode('UTF-8')).hexdigest()
+        self.__pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
+        self.__unpad = lambda s: s[:-ord(s[len(s) - 1:])]
+
+    def __get_key_and_iv(self, password, salt, klen=32, ilen=16, msgdgst='md5'):
+        """
+        Derive the key and the IV from the given password and salt.
+        @param password  The password to use as the seed.
+        @param salt      The salt.
+        @param klen      The key length.
+        @param ilen      The initialization vector length.
+        @param msgdgst   The message digest algorithm to use.
+        """
+        # equivalent to:
+        #   from hashlib import <mdi>  as mdf
+        #   from hashlib import md5    as mdf
+        #   from hashlib import sha512 as mdf
+
+        mdf = getattr(__import__('hashlib', fromlist=[msgdgst]), msgdgst)
+        password = password.encode('UTF-8', 'ignore')
+
+        try:
+            maxlen = klen + ilen
+            keyiv = mdf(password + salt).digest()
+            tmp = [keyiv]
+            while len(tmp) < maxlen:
+                tmp.append(mdf(tmp[-1] + password + salt).digest())
+                keyiv += tmp[-1]  # append the last byte
+            key = keyiv[:klen]
+            ivt = keyiv[klen:klen+ilen]
+            return key, ivt
+        except UnicodeDecodeError:
+            return None, None
+
+
+    def encrypt(self, plaintext):
+        """ Encrpyt plaintext.
+            #echo 'This is plain text !' | openssl aes-256-cbc -e -k password | openssl base64 -e
+            U2FsdGVkX1/6LeCeSdQh2qXEV76f48q2uWkNJdlt73vol+Eg9BUpfZ24yD8QymTv
+        """
+        salt = urandom(8)
+        key, ivt = self.__get_key_and_iv(self.__key, salt, msgdgst='md5')
+        if key is None or ivt is None:
+            return None
+
+        plaintext = self.__pad(plaintext)
+        cipher = AES.new(key, AES.MODE_CBC, ivt)
+        openssl_ciphertext = b'Salted__' + salt + cipher.encrypt(plaintext)
+
+        return b64encode(openssl_ciphertext)
+
+    def __decrypt(self, ciphertext):
+        """ Decrypt enc.
+            #echo 'U2FsdGVkX1/6LeCeSdQh2qXEV76f48q2uWkNJdlt73vol+Eg9BUpfZ24yD8QymTv' | openssl aes-256-cbc -d -k password -base64
+            This is plain text !
+        """
+        ciphertext = b64decode(ciphertext)
+        assert(ciphertext[:8] == b'Salted__')
+        salt = ciphertext[8:16]
+
+        key, ivt = self.__get_key_and_iv(self.__key, salt, msgdgst='md5')
+        if key is None or ivt is None:
+            return None
+        cipher = AES.new(key, AES.MODE_CBC, ivt)
+        return self.__unpad(cipher.decrypt(ciphertext[16:])).decode('UTF-8')
+
 class PBoxWebAPI:
     """PBox WebMc API Class."""
     # pylint: disable=C0301
@@ -134,12 +227,9 @@ class PBoxWebAPI:
     @msg_register('POST', 'Login.cgi')
     def __logininit(self, username='admin', password='admin'):
         """Login."""
-
-        pwdmd5 = hashlib.md5()
-        pwdmd5.update(password.encode('UTF-8'))
         params = OrderedDict()
         params['UserName'] = self.username = username
-        params['PassWord'] = self.passwordmd5 = pwdmd5.hexdigest()
+        params['PassWord'] = self.passwordmd5 = md5(password.encode('UTF-8')).hexdigest()
 
         self.password = password
         return params
@@ -170,16 +260,19 @@ class PBoxWebAPI:
         if ERROR_CODE in self.__loginverify().get('result', ERROR_CODE):
             return False
 
-        # Get PBox Configure Information.
+        self.__getsetupinfo()
+        logging.info('PBox Channel ID %s', self.jcid)
+        logging.info('PBox Devices ID %s', self.jdid)
+        return True
+
+    @catch_exception
+    def __getsetupinfo(self):
+        """Get PBox Configure Information"""
         ret = msg_register('GET', 'Pboxgetsetupinfo.cgi')(lambda x, y: y)(self, None)
         if SUCCESS_CODE in ret.get('result', ERROR_CODE):
             self.pboxinfo = ret.get('detail')
             self.jcid = dict(id=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('_id', '0'))
             self.jdid = dict(id=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('device', {}).get('_id', '0'))
-
-        logging.info('PBox Channel ID %s', self.jcid)
-        logging.info('PBox Devices ID %s', self.jdid)
-        return True
 
     @catch_exception
     def newchannel(self, items, freq=10000, name='default', flag=True):
@@ -192,6 +285,7 @@ class PBoxWebAPI:
             ['Siap', '192.168.3.1', '54321', '10000']
         """
 
+        self.__getsetupinfo()
         if flag is True and re.match(r'1|2', self.jcid['id']) and self.delchannel() is False:
             return False
 
@@ -348,25 +442,23 @@ class PBoxWebAPI:
         ret = msg_register('POST', 'LoadData.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
-    def __getmd5(self, orgstr=''):
-        """Get """
-        md5 = hashlib.md5()
-        md5.update(orgstr.encode('UTF-8'))
-        return md5.hexdigest()
-
     def __generate_encryption_pwd(self, pwd='P@ssw0rd'):
         """"""
         params = OrderedDict(TokenNumber=self.__token)
-        params['OldPassword'] = self.__getmd5(self.password)
-        token_md5 = self.__getmd5(self.__token)
-        def __encryption(pwd, token):
-            for xxx in pwd:
-                tmp = ord(xxx)
-                for yyy in token:
-                    tmp = tmp ^ (ord(yyy) >> 2)
-                yield chr(tmp)
-        newpwd = base64.b64encode(bytes(''.join([x for x in __encryption(pwd, token_md5)]), encoding='UTF-8'))
-        params['NewPassword'] = params['ConfirmPassword'] = str(newpwd, encoding='UTF-8').strip('=')
+        params['OldPassword'] = md5(self.password.encode('UTF-8')).hexdigest()
+
+        # token_md5 = md5(self.__token.encode('UTF-8')).hexdigest()
+        # def __encryption(pwd, token):
+        #     for xxx in pwd:
+        #         tmp = ord(xxx)
+        #         for yyy in token:
+        #             tmp = tmp ^ (ord(yyy) >> 2)
+        #         yield chr(tmp)
+
+        # newpwd = b64encode(bytes(''.join([x for x in __encryption(pwd, token_md5)]), encoding='UTF-8'))
+
+        newpwd = AESCipher(self.__token).encrypt(pwd)
+        params['NewPassword'] = params['ConfirmPassword'] = str(newpwd, encoding='UTF-8')
         return params
 
     @catch_exception
@@ -446,7 +538,7 @@ class PBoxWebAPI:
     def get_siap(self):
         """Get SIAP DataItems."""
         dataitems = self.__siap()
-        return dataitems['detail'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
+        return dataitems['detail']['items'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
 
     @catch_exception
     def get_pansert(self):

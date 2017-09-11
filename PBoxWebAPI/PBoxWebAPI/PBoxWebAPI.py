@@ -31,10 +31,10 @@
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
 # (3) [PyLint Message: See web: http://pylint-messages.wikidot.com/]
- 
+
+
 import re
 import json
-import string
 import logging
 
 from os import urandom
@@ -140,7 +140,6 @@ class AESCipher:
     Tested under Python 3.5 and PyCrypto 2.6.1.
     """
     def __init__(self, key):
-        self.__alphabet = string.ascii_letters
         self.__key = md5(key.encode('UTF-8')).hexdigest()
         self.__pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
         self.__unpad = lambda s: s[:-ord(s[len(s) - 1:])]
@@ -189,11 +188,10 @@ class AESCipher:
         plaintext = self.__pad(plaintext)
         cipher = AES.new(key, AES.MODE_CBC, ivt)
         openssl_ciphertext = b'Salted__' + salt + cipher.encrypt(plaintext)
-
         return b64encode(openssl_ciphertext)
 
     def __decrypt(self, ciphertext):
-        """ Decrypt enc.
+        """ Decrypt ciphertext.
             #echo 'U2FsdGVkX1/6LeCeSdQh2qXEV76f48q2uWkNJdlt73vol+Eg9BUpfZ24yD8QymTv' | openssl aes-256-cbc -d -k password -base64
             This is plain text !
         """
@@ -226,7 +224,11 @@ class PBoxWebAPI:
 
     @msg_register('POST', 'Login.cgi')
     def __logininit(self, username='admin', password='admin'):
-        """Login."""
+        """
+            Login init.
+            @param username  The username to use as login.
+            @param password  The password to use as login.
+        """
         params = OrderedDict()
         params['UserName'] = self.username = username
         params['PassWord'] = self.passwordmd5 = md5(password.encode('UTF-8')).hexdigest()
@@ -246,6 +248,9 @@ class PBoxWebAPI:
     @catch_exception
     def login(self, url='http://192.168.3.111', username='admin', password='admin'):
         """ WebMc Login
+            @param url       url for device. ex: https://ipaddress or http://ipaddress
+            @param username  The username to use as login.
+            @param password  The password to use as login.
             2017-08-03 V1.2 [Heyn] New url params
         """
         self.url = url + '/cgi-bin/'
@@ -273,11 +278,13 @@ class PBoxWebAPI:
             self.pboxinfo = ret.get('detail')
             self.jcid = dict(id=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('_id', '0'))
             self.jdid = dict(id=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('device', {}).get('_id', '0'))
+            return True
+        return False
 
     @catch_exception
     def newchannel(self, items, freq=10000, name='default', flag=True):
         """ PBox new a channel.
-        Items params:
+        @param items
             ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '1000']
             ['Modbus-TCP', '192.168.3.1', '54321', '1000']
             ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']

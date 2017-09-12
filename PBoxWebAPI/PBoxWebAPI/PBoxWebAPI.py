@@ -26,6 +26,11 @@
 #           2017-09-04 Wheel Ver:0.1.9 [Heyn] New add confpassword()
 #           2017-09-05 Wheel Ver:0.2.1 [Heyn] Optimization code __siap() and __panasert()
 #           2017-09-07 Wheel Ver:1.0.0 [Heyn] New class AESCipher for Openssl Encrypt & Decrypt
+#           2017-09-07 Wheel Ver:1.0.1 [Heyn] New __getdriverinfo() \ __getbasicinfo()
+#                                                 version() \ datetime()
+#           2017-09-12 Wheel Ver:1.1.0 [Heyn]
+#                            BugFix002 datetime() Process webmc return value |17|09|12|14|36|20
+#                            New upate() \ recovery()
 #
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -39,6 +44,7 @@ import logging
 
 from os import urandom
 from hashlib import md5
+from time import strptime
 from base64 import b64encode
 from base64 import b64decode
 from collections import OrderedDict
@@ -52,6 +58,7 @@ ERROR_CODE = 'ERROR'
 SUCCESS_CODE = 'SUCCESS'
 #################################################
 
+HTTPS_VERIFY = False
 
 def catch_exception(origin_func):
     """Catch exception."""
@@ -80,29 +87,29 @@ def msg_register(method, cgi, timeout=5):
                                      data=payload,
                                      headers=header,
                                      timeout=timeout,
-                                     verify=False)
+                                     verify=HTTPS_VERIFY)
             elif payload is not False and method == 'GET':
                 # 2017-08-01 for https verify = False
-                ret = self.sess.get(self.url + cgi, headers=header, timeout=timeout, verify=False)
+                ret = self.sess.get(self.url + cgi, headers=header, timeout=timeout, verify=HTTPS_VERIFY)
             else:
                 return ERROR_CODE
-
+            logging.debug('CGI=%s data=%s RES=%s TEXT=%s', cgi, str(payload), str(ret), str(ret.text))
             result = dict(result=ERROR_CODE, status='404', detail='')
             if ('Response [200]' in str(ret)) and ((SUCCESS_CODE in ret.text) or (ERROR_CODE not in ret.text)):
-                if ret.text.strip():
-                    result['status'] = '0' if SUCCESS_CODE in ret.text else (lambda x: '0' if 'status' not in x.keys() else x['status'])(json.loads(ret.text))
+                # Wheel 1.1.0 BUGFIX002: datetime()
+                try:
+                    result['status'] = (lambda x: '0' if 'status' not in x.keys() else x['status'])(json.loads(ret.text))
                     result['result'] = ERROR_CODE if result['status'] != '0' else SUCCESS_CODE
                     result['detail'] = ret.text if SUCCESS_CODE in ret.text else json.loads(ret.text)
-                else:
-                    result['result'] = SUCCESS_CODE
+                except BaseException:
                     result['status'] = '0'
-                    result['detail'] = ''
+                    result['result'] = SUCCESS_CODE
+                    result['detail'] = ret.text.strip()
 
                 if result['result'] == ERROR_CODE:
                     logging.error('Function = %s()  %s', func, result)
             else:
                 logging.error('Function = %s ret = %s, text = %s', func, ret, str(ret.text).strip('\n'))
-
             return result
         return wrapper
     return decorator
@@ -216,7 +223,7 @@ class PBoxWebAPI:
         self.sess = requests.session()
         self.__token = '200'
         self.username = self.password = self.passwordmd5 = 'admin'
-        self.pboxinfo = None
+        self.pboxinfo = self.driverinfo = self.basicinfo = None
         self.jcid = self.jdid = dict(id='0') # JSON Channel ID & JSON Device ID.
 
         formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
@@ -266,6 +273,8 @@ class PBoxWebAPI:
             return False
 
         self.__getsetupinfo()
+        self.__getdriverinfo()
+
         logging.info('PBox Channel ID %s', self.jcid)
         logging.info('PBox Devices ID %s', self.jdid)
         return True
@@ -280,6 +289,51 @@ class PBoxWebAPI:
             self.jdid = dict(id=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('device', {}).get('_id', '0'))
             return True
         return False
+
+    @catch_exception
+    def __getdriverinfo(self):
+        """Get PBox Driver Information."""
+        ret = msg_register('GET', 'Pboxgetdriverinfo.cgi')(lambda x, y: y)(self, None)
+        if SUCCESS_CODE in ret.get('result', ERROR_CODE):
+            self.driverinfo = ret.get('detail')
+            return True
+        return False
+
+    @catch_exception
+    def __getbasicinfo(self):
+        """Get PBox Basic Information
+        {'Pbox': {'NetworkInfo': {'localip': '192.168.3.222',
+                                  'Gateway': {'_gateway': '192.168.3.1',
+                                              '_mask': '255.255.255.0',
+                                              '_dns': '1.1.1.1',
+                                              '_dhcp': 'YES',
+                                              '_ip': '10.194.148.181'},
+                                  'Wifi': {'_gateway': '192.168.2.1',
+                                           '_mask': '255.255.0.0',
+                                           '_dns': '2.2.2.2',
+                                           '_dhcp': 'NO',
+                                           '_ip': '11.124.134.178'},
+                                  'Mode': 'gateway'},
+                 'BasicInfo': {'HardwareModel': '20170830',
+                               'SerialNumber': '00142d4d0198\n',
+                               'AgentVersion': '20170830',
+                               'SoftVersion': '20170830'},
+                 'Wifi': {'SSID': 'TP-LINK_3G_PBOX'},
+                 'CloudInfo': {'Address': '47.93.79.77'}}}
+        """
+        ret = msg_register('GET', 'Pboxgetbasicinfo.cgi')(lambda x, y: y)(self, None)
+        if SUCCESS_CODE in ret.get('result', ERROR_CODE):
+            self.basicinfo = ret.get('detail')
+            return True
+        return False
+
+    def version(self):
+        """Get PBox software and hardware informations.
+        @retvalue: {'SoftVersion': '20170830', 'HardwareModel': '20170830', 'SerialNumber': '00142d4d0198\n', 'AgentVersion': '20170830'}
+        """
+        if self.__getbasicinfo() is False:
+            return None
+        return self.basicinfo.get('Pbox', None).get('BasicInfo', None)
 
     @catch_exception
     def newchannel(self, items, freq=10000, name='default', flag=True):
@@ -465,6 +519,7 @@ class PBoxWebAPI:
         # newpwd = b64encode(bytes(''.join([x for x in __encryption(pwd, token_md5)]), encoding='UTF-8'))
 
         newpwd = AESCipher(self.__token).encrypt(pwd)
+
         params['NewPassword'] = params['ConfirmPassword'] = str(newpwd, encoding='UTF-8')
         return params
 
@@ -552,3 +607,36 @@ class PBoxWebAPI:
         """Get Panasonic Sert(TCP or Serial) DataItems."""
         dataitems = self.__panasert()
         return dataitems['detail']['items'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
+
+    @catch_exception
+    def datetime(self):
+        """ Get system date and time.
+            @retvalue   time.struct_time(tm_year=2017, tm_mon=9, tm_mday=11, tm_hour=15, tm_min=22, tm_sec=37, tm_wday=0, tm_yday=254, tm_isdst=-1)
+        """
+        params = OrderedDict(TokenNumber=self.__token)
+        params['up'] = ''
+        ret = msg_register('POST', 'Timeget.cgi')(lambda x, y: y)(self, params)
+        return strptime(ret['detail'].strip(), '|%Y|%m|%d|%H|%M|%S')
+
+    @catch_exception
+    def update(self):
+        """Firmware Update."""
+        params = OrderedDict(TokenNumber=self.__token)
+        params['update'] = 'restart'
+        ret = msg_register('POST', 'Firmwareupdate.cgi')(lambda x, y: y)(self, params)
+        logging.debug('WebMc Firmwareupdate.cgi %s', str(ret))
+        return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
+
+    @catch_exception
+    def recovery(self):
+        """ System recovery
+            @retvaule   <Response [200]> TEXT=Sun Oct  1 00:00:00 HKT 2017
+        """
+        params = OrderedDict(TokenNumber=self.__token)
+        params['update'] = 'restart'
+        try:
+            ret = msg_register('POST', 'Recovery.cgi')(lambda x, y: y)(self, params)
+        except BaseException:
+            return True
+        logging.debug('WebMc Recovery.cgi = %s', str(ret))
+        return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False

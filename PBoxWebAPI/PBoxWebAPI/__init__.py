@@ -9,6 +9,9 @@
 #           2017-08-07 Wheel Ver:0.0.6 [Heyn]
 #           2017-08-24 Wheel Ver:0.1.0 [Heyn] New webdeldevice interface.
 #           2017-08-25 Wheel Ver:0.1.1 [Heyn] New webpansert & websiap interface.
+#           2017-09-07 Wheel Ver:1.0.1 [Heyn] New __getdriverinfo() \ __getbasicinfo()
+#                                                 version() \ datetime()
+#
 
 from .PBoxWebAPI import PBoxWebAPI
 from .PBoxWebAPI import print_pretty
@@ -20,7 +23,8 @@ __all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
            'webalterchannel', 'webalterdevice', 'webalteritem',
            'webcloudaddress', 'webdownload', 'armreboot', 'webnewpassword',
            'weblanip', 'webwanip', 'webnet',
-           'imageReport', 'webpansert', 'websiap', 'webconfpassword']
+           'imageReport', 'webpansert', 'websiap', 'webconfpassword',
+           'webversion', 'webdatetime', 'webupdate', 'webrecovery']
 
 instanceList = []
 
@@ -60,3 +64,9 @@ websiap         = originInstance.get_siap
 
 webnewpassword  = originInstance.newpassword
 webconfpassword = originInstance.confpassword
+
+webversion      = originInstance.version
+webdatetime     = originInstance.datetime
+
+webupdate       = originInstance.update
+webrecovery     = originInstance.recovery

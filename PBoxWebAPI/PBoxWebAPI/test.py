@@ -8,10 +8,8 @@
 # History:  2017-08-17 Wheel Ver:0.1.5 [Heyn] Initialize
 
 import unittest
-import libscrc
-
-from PBoxWebAPI import *
-# import PBoxWebAPI
+import logging
+from PBoxWebAPI import PBoxWebAPI
 
 class TestPBoxWebAPI(unittest.TestCase):
     """Test PBoxWebAPI.
@@ -20,7 +18,13 @@ class TestPBoxWebAPI(unittest.TestCase):
     def do_basics(self, module):
         """Test basic functionality.
         """
-        ret = module.login(url='https://192.168.3.222', password='admin')
+        ret = module.login(url='https://192.168.3.222', password='Psdcd123')
+        self.assertEqual(ret, True)
+
+        ret = module.newpassword('Psdcd123')
+        self.assertEqual(ret, True)
+
+        ret = module.confpassword('Psdcd123')
         self.assertEqual(ret, True)
 
         ret = module.newchannel(name='Test', items=['Modbus-TCP', '127.0.0.1', '51320', '5000'], flag=True)
@@ -28,7 +32,7 @@ class TestPBoxWebAPI(unittest.TestCase):
 
         ret = module.alterchannel(name='Test', items=['Modbus-TCP', '127.0.0.1', '51320', '5000'])
         self.assertEqual(ret, True)
-        
+
         ret = module.newdevice(name='Test')
         self.assertEqual(ret, True)
 
@@ -46,10 +50,19 @@ class TestPBoxWebAPI(unittest.TestCase):
         self.assertEqual(module.wanipaddress(dhcp='NO'), True)
         self.assertEqual(module.netswitch(), True)
 
+        print(module.version())
+        print(module.datetime())
+
+        ret = module.update()
+        self.assertEqual(ret, False)
+
+        #ret = module.recovery()
+        #self.assertEqual(ret, True)
+
     def test_basics(self):
         """Test basic functionality.
         """
-        self.do_basics(PBoxWebAPI())
+        self.do_basics(PBoxWebAPI(debugLevel=logging.ERROR))
 
 
 if __name__ == '__main__':

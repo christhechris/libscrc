@@ -32,6 +32,8 @@
 #                            BugFix002 datetime() Process webmc return value |17|09|12|14|36|20
 #                            New upate() \ recovery()
 #
+#           2017-09-13 Wheel Ver:1.1.1 [Heyn] BugFix003 Removed logging.basicConfig(xxxxxx) in __init__()
+#
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -67,7 +69,7 @@ def catch_exception(origin_func):
         try:
             return origin_func(self, *args, **kwargs)
         except BaseException as msg:
-            print('[ERROR] %s an exception raised. *** %s ***'%(origin_func, str(msg)))
+            logging.warning('[ERROR] %s an exception raised. *** %s ***', origin_func, str(msg))
             return False
     return wrapper
 
@@ -93,9 +95,9 @@ def msg_register(method, cgi, timeout=5):
                 ret = self.sess.get(self.url + cgi, headers=header, timeout=timeout, verify=HTTPS_VERIFY)
             else:
                 return ERROR_CODE
-            logging.debug('CGI=%s data=%s RES=%s TEXT=%s', cgi, str(payload), str(ret), str(ret.text))
+            logging.debug('CGI=%s DATA=%s RET_CODE=%s TEXT=%s', cgi, str(payload), str(ret.status_code), str(ret.text))
             result = dict(result=ERROR_CODE, status='404', detail='')
-            if ('Response [200]' in str(ret)) and ((SUCCESS_CODE in ret.text) or (ERROR_CODE not in ret.text)):
+            if (ret.status_code == 200) and ((SUCCESS_CODE in ret.text) or (ERROR_CODE not in ret.text)):
                 # Wheel 1.1.0 BUGFIX002: datetime()
                 try:
                     result['status'] = (lambda x: '0' if 'status' not in x.keys() else x['status'])(json.loads(ret.text))
@@ -107,9 +109,9 @@ def msg_register(method, cgi, timeout=5):
                     result['detail'] = ret.text.strip()
 
                 if result['result'] == ERROR_CODE:
-                    logging.error('Function = %s()  %s', func, result)
+                    logging.warning('Function = %s()  %s', func, result)
             else:
-                logging.error('Function = %s ret = %s, text = %s', func, ret, str(ret.text).strip('\n'))
+                logging.warning('Function = %s ret = %s, text = %s', func, ret, str(ret.text).strip('\n'))
             return result
         return wrapper
     return decorator
@@ -217,7 +219,7 @@ class PBoxWebAPI:
     # pylint: disable=C0301
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, url='http://192.168.3.111', debugLevel=logging.ERROR):
+    def __init__(self, url='https://192.168.3.111'):
         self.url = url + '/cgi-bin/'
         requests.packages.urllib3.disable_warnings()    # 2017-08-01 for https verify = False
         self.sess = requests.session()
@@ -225,9 +227,6 @@ class PBoxWebAPI:
         self.username = self.password = self.passwordmd5 = 'admin'
         self.pboxinfo = self.driverinfo = self.basicinfo = None
         self.jcid = self.jdid = dict(id='0') # JSON Channel ID & JSON Device ID.
-
-        formatopt = '[%(asctime)s] [%(filename)s] [%(levelname)s] %(message)s'
-        logging.basicConfig(level=debugLevel, format=formatopt)
 
     @msg_register('POST', 'Login.cgi')
     def __logininit(self, username='admin', password='admin'):
@@ -530,7 +529,7 @@ class PBoxWebAPI:
         ret = msg_register('POST', 'Changeinitialpsswd.cgi')(lambda x, y: y)(self, params)
 
         if ERROR_CODE in ret.get('result', ERROR_CODE):
-            logging.error('%s -- %s', params, newpassword)
+            logging.warning('%s -- %s', params, newpassword)
             return False
         return True
 
@@ -541,7 +540,7 @@ class PBoxWebAPI:
         ret = msg_register('POST', 'PasswordConfig.cgi')(lambda x, y: y)(self, params)
 
         if ERROR_CODE in ret.get('result', ERROR_CODE):
-            logging.error('%s -- %s', params, newpassword)
+            logging.warning('%s -- %s', params, newpassword)
             return False
         return True
 
@@ -579,7 +578,9 @@ class PBoxWebAPI:
     @catch_exception
     def reboot(self):
         """Exec configuration."""
-        ret = msg_register('POST', 'RebootArm.cgi')(lambda x, y: y)(self, OrderedDict(TokenNumber=self.__token, restart='restart'))
+        params = OrderedDict(TokenNumber=self.__token)
+        params['restart'] = 'restart'
+        ret = msg_register('POST', 'RebootArm.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
     @msg_register('POST', 'RefreshDataitem.cgi')

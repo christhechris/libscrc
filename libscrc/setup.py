@@ -15,6 +15,7 @@ from codecs import open
 #                      Wheel Ver:0.0.4 [Heyn] New CRC16-SICK / CRC16-DNP.
 #           2017-08-17 Wheel Ver:0.0.5 [Heyn] New CRC64-ISO / CRC64-ECMA182.
 #           2017-08-22 Wheel Ver:0.1.2 [Heyn] Optimization code for the C99 standard.
+#           2017-09-19 Wheel Ver:0.1.3 [Heyn] New CRC16-X25.
 #
 
 """
@@ -32,7 +33,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.1.2',
+    version='0.1.3',
 
     description='Library for calculating CRC8/CRC16/CRC32/CRC64',
     long_description=long_description,

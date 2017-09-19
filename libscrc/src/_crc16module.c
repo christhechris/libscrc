@@ -4,7 +4,7 @@
 *                                           All Rights Reserved
 * File    : _crc16module.c
 * Author  : Heyn (heyunhuan@gmail.com)
-* Version : V0.1.0
+* Version : V0.1.1
 * Web	  : http://heyunhuan513.blog.163.com
 *
 * LICENSING TERMS:
@@ -19,11 +19,13 @@
 *                                         To     PyArg_ParseTuple(* , "y#|H")
 *                                         "H" : Convert a Python integer to a C unsigned short int,
 *                                               without overflow checking.
+*                       2017-09-19 [Heyn] New CRC16-X25. (V0.1.1)
 *
 *********************************************************************************************************
 */
 
 #include <Python.h>
+#include "_crc16module.h"
 
 #define                 TRUE                    1
 #define                 FALSE                   0
@@ -491,6 +493,43 @@ static PyObject * _crc16_dnp(PyObject *self, PyObject *args)
     return Py_BuildValue("H", result);
 }
 
+/*
+*********************************************************************************************************
+                                    [X25]
+*********************************************************************************************************
+*/
+
+unsigned short hz_calc_crc16_x25( const unsigned char *pSrc, unsigned int len, unsigned short crc16)
+{
+    unsigned int i = 0;
+    unsigned short crc = crc16;
+
+    for ( i=0; i<len; i++ ) {
+        crc = ((crc >> 8) ^ crc_tab16_x25[ (crc ^ (0x00FF & (unsigned short)pSrc[i])) & 0xFF ]) & 0xFFFF;
+    }
+    return ~crc;
+}
+
+static PyObject * _crc16_x25(PyObject *self, PyObject *args)
+{
+    const unsigned char *data = NULL;
+    unsigned int data_len = 0x00000000L;
+    unsigned short crc16  = 0xFFFF;
+    unsigned short result = 0x0000;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "y#|H", &data, &data_len, &crc16))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "s#|H", &data, &data_len, &crc16))
+        return NULL;
+#endif /* PY_MAJOR_VERSION */
+
+    result = hz_calc_crc16_x25(data, data_len, crc16);
+
+    return Py_BuildValue("H", result);
+}
+
 /* method table */
 static PyMethodDef _crc16Methods[] = {
     {"modbus",  _crc16_modbus, METH_VARARGS, "Calculate CRC (Modbus) of CRC16 [Poly=0xA001, Init=0xFFFF]"},
@@ -500,6 +539,7 @@ static PyMethodDef _crc16Methods[] = {
     {"kermit",  _crc16_kermit, METH_VARARGS, "Calculate Kermit of CRC16 [Poly=0x8408 Init=0x0000)"},
     {"sick",    _crc16_sick,   METH_VARARGS, "Calculate Sick of CRC16   [Poly=0x8005 Init=0x0000)"},
     {"dnp",     _crc16_dnp,    METH_VARARGS, "Calculate DNP  of CRC16   [Poly=0xA6BC Init=0x0000)"},
+    {"x25",     _crc16_x25,    METH_VARARGS, "Calculate X25  of CRC16   [Poly=0x1189 Init=0xFFFF)"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -508,7 +548,7 @@ static PyMethodDef _crc16Methods[] = {
 PyDoc_STRVAR(_crc16_doc,
 "Calculation of CRC16 \n"
 "Modbus IBM CCITT-XMODEM CCITT-KERMIT CCITT-0xFFFF CCITT-0x1D0F \n"
-"CRC16-SICK CRC16-DNP \n"
+"CRC16-SICK CRC16-DNP CRC16-X25\n"
 "\n");
 
 
@@ -534,7 +574,7 @@ PyInit__crc16(void)
         return NULL;
     }
 
-    PyModule_AddStringConstant(m, "__version__", "0.1.0");
+    PyModule_AddStringConstant(m, "__version__", "0.1.1");
     PyModule_AddStringConstant(m, "__author__", "Heyn");
 
     return m;

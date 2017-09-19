@@ -20,6 +20,10 @@ libscrc is a library for calculating CRC8 CRC16 CRC32 CRC64.
 +------------+------------+-----------+-----------+ 
 |            | DNP        |           |           |
 +------------+------------+-----------+-----------+ 
+|            | X25        |           |           |
++------------+------------+-----------+-----------+ 
+
+
 
 Installation
 ------------
@@ -73,6 +77,7 @@ Example
     crc16 = libscrc.kermit(b'1234')  
     crc16 = libscrc.sick(b'1234')  
     crc16 = libscrc.dnp(b'1234')
+    crc16 = libscrc.x25(b'1234')
 
 * CRC32::
     
@@ -83,6 +88,11 @@ Example
 
     crc64 = libscrc.iso(b'1234')
     crc64 = libscrc.ecma182(b'1234')
+
+
+V0.1.3 (2017-09-19)
++++++++++++++++++++
+* New CRC16-X25
 
 V0.1.2 (2017-08-22)
 +++++++++++++++++++

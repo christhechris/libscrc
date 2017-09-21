@@ -12,13 +12,13 @@ libscrc is a library for calculating CRC8 CRC16 CRC32 CRC64.
 +------------+------------+-----------+-----------+ 
 | LRC        | XModem     |           |           |
 +------------+------------+-----------+-----------+ 
-|            | CCITT      |           |           |
+| MAXIM8     | CCITT      |           |           |
 +------------+------------+-----------+-----------+ 
-|            | Kermit     |           |           |
+| ROHC       | Kermit     |           |           |
 +------------+------------+-----------+-----------+ 
-|            | Sick       |           |           |
+| ITU        | Sick       |           |           |
 +------------+------------+-----------+-----------+ 
-|            | DNP        |           |           |
+| CRC8       | DNP        |           |           |
 +------------+------------+-----------+-----------+ 
 |            | X25        |           |           |
 +------------+------------+-----------+-----------+ 
@@ -70,7 +70,10 @@ Example
     crc8 = libscrc.intel(b'1234')
     crc8 = libscrc.bcc(b'1234')  
     crc8 = libscrc.lrc(b'1234')  
-    crc8 = libscrc.verb(b'1234')
+    crc8 = libscrc.maxim8(b'1234')
+    crc8 = libscrc.rohc(b'1234')
+    crc8 = libscrc.itu(b'1234')
+    crc8 = libscrc.crc8(b'1234')
 
 * CRC16::
 
@@ -84,7 +87,7 @@ Example
     crc16 = libscrc.sick(b'1234')  
     crc16 = libscrc.dnp(b'1234')  
     crc16 = libscrc.x25(b'1234')  
-    crc16 = libscrc.usb(b'1234')  
+    crc16 = libscrc.usb16(b'1234')  
     crc16 = libscrc.maxim16(b'1234')  
     crc16 = libscrc.dect(b'1234')           # poly=0x0589 (Cordless Telephones)
 
@@ -97,6 +100,14 @@ Example
 
     crc64 = libscrc.iso(b'1234')
     crc64 = libscrc.ecma182(b'1234')
+
+
+V0.1.4 (2017-09-21)
++++++++++++++++++++
+* New CRC8-MAXIM8   Poly = 0x31 Initial = 0x00 Xorout=0x00 Refin=True  Refout=True
+* New CRC8-ROHC     Poly = 0x07 Initial = 0xFF Xorout=0x00 Refin=True  Refout=True
+* New CRC8-ITU      Poly = 0x07 Initial = 0x00 Xorout=0x55 Refin=False Refout=False
+* New CRC8-CRC8     Poly = 0x07 Initial = 0x00 Xorout=0x00 Refin=False Refout=False
 
 
 V0.1.3 (2017-09-19)

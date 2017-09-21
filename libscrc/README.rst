@@ -22,8 +22,12 @@ libscrc is a library for calculating CRC8 CRC16 CRC32 CRC64.
 +------------+------------+-----------+-----------+ 
 |            | X25        |           |           |
 +------------+------------+-----------+-----------+ 
-
-
+|            | USB        |           |           |
++------------+------------+-----------+-----------+
+|            | MAXIM16    |           |           |
++------------+------------+-----------+-----------+
+|            | DECT       |           |           |
++------------+------------+-----------+-----------+
 
 Installation
 ------------
@@ -70,14 +74,19 @@ Example
 
 * CRC16::
 
-    crc16 = libscrc.ibm(b'1234')  
+    crc16 = libscrc.ibm(b'1234')            # poly=0xA001 (default Reversed)  
+    crc16 = libscrc.ibm(b'1234', 0x8005)    # poly=0x8005 (Normal)
     crc16 = libscrc.modbus(b'1234')  
     crc16 = libscrc.xmodem(b'1234')  
-    crc16 = libscrc.ccitt(b'1234', 0xFFFF)  # poly=0x1021 initvalue=0xFFFF or 0x1D0F
+    crc16 = libscrc.ccitt(b'1234')  
+    crc16 = libscrc.ccitt_false(b'1234')  
     crc16 = libscrc.kermit(b'1234')  
     crc16 = libscrc.sick(b'1234')  
-    crc16 = libscrc.dnp(b'1234')
-    crc16 = libscrc.x25(b'1234')
+    crc16 = libscrc.dnp(b'1234')  
+    crc16 = libscrc.x25(b'1234')  
+    crc16 = libscrc.usb(b'1234')  
+    crc16 = libscrc.maxim16(b'1234')  
+    crc16 = libscrc.dect(b'1234')           # poly=0x0589 (Cordless Telephones)
 
 * CRC32::
     
@@ -92,7 +101,15 @@ Example
 
 V0.1.3 (2017-09-19)
 +++++++++++++++++++
-* New CRC16-X25
+* New CRC16-X25  
+* New CRC16-USB  
+* New CRC16-MAXIM16  
+* New CRC16-CCITT_FALSE
+* New CRC16-DECT
+
+**Bugfixes**
+  * Calculate CRC16-IBM of poly = 0x8005 is ERROR.
+
 
 V0.1.2 (2017-08-22)
 +++++++++++++++++++

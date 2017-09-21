@@ -17,7 +17,24 @@
 #ifndef __CRC16_TABLES_H__
 #define __CRC16_TABLES_H__
 
-unsigned short hz_calc_crc16_r8408( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
-unsigned short hz_calc_crc16_l1021( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+#define                 TRUE                                    1
+#define                 FALSE                                   0
+
+#define                 MAX_TABLE_ARRAY                         256
+
+#define                 CRC16_POLYNOMIAL_8408                   0x8408
+#define                 CRC16_POLYNOMIAL_1021                   0x1021
+#define                 CRC16_POLYNOMIAL_A001                   0xA001
+#define                 CRC16_POLYNOMIAL_8005                   0x8005
+#define                 CRC16_POLYNOMIAL_A6BC                   0xA6BC
+#define                 CRC16_POLYNOMIAL_91A0                   0x91A0
+
+unsigned short hz_calc_crc16_8408( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_1021( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_a001( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_8005( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_sick( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_a6bc( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
+unsigned short hz_calc_crc16_91a0( const unsigned char *pSrc, unsigned int len, unsigned short crc16 );
 
 #endif //__CRC16_TABLES_H__

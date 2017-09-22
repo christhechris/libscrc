@@ -75,7 +75,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords=['CRC8', 'CRC16', 'CCITT', 'XMODEM', 'KERMIT', 'CRC32', 'CRC64'],
+    keywords=['CRC4', 'CRC5', 'CRC6', 'CRC7', 'CRC8', 'CRC16', 'CRC32', 'CRC64'],
 
     packages=['libscrc'],
     ext_modules=[Extension('libscrc._crcx', sources=['src/_crcxmodule.c', 'src/_crcxtables.c']),

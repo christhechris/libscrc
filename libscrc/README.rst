@@ -16,7 +16,7 @@ libscrc is a library for calculating CRC8 CRC16 CRC32 CRC64.
 +------------+------------+-----------+-----------+ 
 | ROHC       | Kermit     |           |           |
 +------------+------------+-----------+-----------+ 
-| ITU        | Sick       |           |           |
+| ITU8       | Sick       |           |           |
 +------------+------------+-----------+-----------+ 
 | CRC8       | DNP        |           |           |
 +------------+------------+-----------+-----------+ 
@@ -72,7 +72,7 @@ Example
     crc8 = libscrc.lrc(b'1234')  
     crc8 = libscrc.maxim8(b'1234')
     crc8 = libscrc.rohc(b'1234')
-    crc8 = libscrc.itu(b'1234')
+    crc8 = libscrc.itu8(b'1234')
     crc8 = libscrc.crc8(b'1234')
 
 * CRC16::

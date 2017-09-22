@@ -19,7 +19,7 @@
 *                                         "B" : Convert a Python integer to a tiny int without overflow
 *                                               checking, stored in a C unsigned char.
 *                       2017-09-21 [Heyn] Optimized code for _crc8_maxim
-*                                         New CRC8-MAXIM8 CRC8-ROHC CRC8-ITU CRC8
+*                                         New CRC8-MAXIM8 CRC8-ROHC CRC8-ITU8 CRC8
 *
 *********************************************************************************************************
 */
@@ -358,7 +358,7 @@ static PyMethodDef _crc8Methods[] = {
     {"lrc",     _crc8_lrc,      METH_VARARGS, "Calculate LRC of CRC8 [Initial = 0x00]"},
     {"maxim8",  _crc8_maxim,    METH_VARARGS, "Calculate MAXIM of CRC8 [Poly = 0x31 Initial = 0x00 Xorout=0x00 Refin=True Refout=True] e.g. DS18B20"},
     {"rohc",    _crc8_rohc,     METH_VARARGS, "Calculate ROHC of CRC8 [Poly = 0x07 Initial = 0xFF Xorout=0x00 Refin=True Refout=True]"},
-    {"itu",     _crc8_itu,      METH_VARARGS, "Calculate ITU  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x55 Refin=False Refout=False]"},
+    {"itu8",    _crc8_itu,      METH_VARARGS, "Calculate ITU  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x55 Refin=False Refout=False]"},
     {"crc8",    _crc8,          METH_VARARGS, "Calculate CRC  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x00 Refin=False Refout=False]"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
@@ -372,7 +372,7 @@ PyDoc_STRVAR(_crc8_doc,
 "libscrc.lrc    -> Calculate LRC of CRC8 [Initial = 0x00]\n"
 "libscrc.maxim8 -> Calculate MAXIM of CRC8 [Poly = 0x31 Initial = 0x00 Xorout=0x00 Refin=True Refout=True] e.g. DS18B20\n"
 "libscrc.rohc   -> Calculate ROHC of CRC8 [Poly = 0x07 Initial = 0xFF Xorout=0x00 Refin=True Refout=True]\n"
-"libscrc.itu    -> Calculate ITU  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x55 Refin=False Refout=False]\n"
+"libscrc.itu8   -> Calculate ITU  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x55 Refin=False Refout=False]\n"
 "libscrc.crc8   -> Calculate CRC  of CRC8 [Poly = 0x07 Initial = 0x00 Xorout=0x00 Refin=False Refout=False]\n"
 "\n");
 

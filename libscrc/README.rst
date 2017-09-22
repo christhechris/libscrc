@@ -1,16 +1,16 @@
 libscrc
 =======
 
-libscrc is a library for calculating CRC8 CRC16 CRC32 CRC64.
+libscrc is a library for calculating CRC4 CRC5 CRC6 CRC7 CRC8 CRC16 CRC32 CRC64.
 
 +------------+------------+------------+-----------+-----------+ 
 | CRCx       | CRC8       | CRC16      | CRC32     | CRC64     |
 +============+============+============+===========+===========+ 
 | CRC4-ITU   | Intel      | Modbus     | FSC       | ISO       |
 +------------+------------+------------+-----------+-----------+ 
-| CRC5-ITU   | BCC        | IBM        | FILE      | ECMA182   |
+| CRC5-ITU   | BCC        | IBM        | CRC32     | ECMA182   |
 +------------+------------+------------+-----------+-----------+ 
-| CRC5-EPC   | LRC        | XModem     |           |           |
+| CRC5-EPC   | LRC        | XModem     | MPEG2     |           |
 +------------+------------+------------+-----------+-----------+ 
 | CRC5-USB   | MAXIM8     | CCITT      |           |           |
 +------------+------------+------------+-----------+-----------+ 
@@ -103,8 +103,9 @@ Example
 
 * CRC32::
     
-    crc32 = libscrc.fsc(b'1234')
-    crc32 = libscrc.crc32(b'1234')
+    crc32 = libscrc.fsc(b'1234')            # Ethernet frame sequence (FSC)
+    crc32 = libscrc.mpeg2(b'1234')          # MPEG2
+    crc32 = libscrc.crc32(b'1234')          # WinRAR, File
 
 * CRC64::
 

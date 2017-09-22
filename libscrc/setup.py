@@ -33,7 +33,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='libscrc',
-    version='0.1.3',
+    version='0.1.5',
 
     description='Library for calculating CRC8/CRC16/CRC32/CRC64',
     long_description=long_description,
@@ -78,7 +78,8 @@ setup(
     keywords=['CRC8', 'CRC16', 'CCITT', 'XMODEM', 'KERMIT', 'CRC32', 'CRC64'],
 
     packages=['libscrc'],
-    ext_modules=[Extension('libscrc._crc8', sources=['src/_crc8module.c']),
+    ext_modules=[Extension('libscrc._crcx', sources=['src/_crcxmodule.c', 'src/_crcxtables.c']),
+                 Extension('libscrc._crc8', sources=['src/_crc8module.c']),
                  Extension('libscrc._crc16', sources=['src/_crc16module.c', 'src/_crc16tables.c']),
                  Extension('libscrc._crc32', sources=['src/_crc32module.c']),
                  Extension('libscrc._crc64', sources=['src/_crc64module.c']),

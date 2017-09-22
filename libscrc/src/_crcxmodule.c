@@ -273,7 +273,7 @@ PyInit__crcx(void)
 PyMODINIT_FUNC
 init_crcx(void)
 {
-    (void) Py_InitModule3("_crcx", _crc8Methods, _crc8_doc);
+    (void) Py_InitModule3("_crcx", _crcxMethods, _crcx_doc);
 }
 
 #endif /* PY_MAJOR_VERSION */

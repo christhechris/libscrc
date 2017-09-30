@@ -82,15 +82,16 @@ def msg_register(method, cgi, timeout=5):
         def wrapper(self, *args, **kwargs):
             """Wrapper."""
             payload = func(self, *args, **kwargs)
-            header = {'Content-Type':'application/x-www-form-urlencoded'}
-            if payload is not False and method == 'POST':
+            header = {'Content-Type':'application/x-www-form-urlencoded',
+                      'User-Agent' : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3'}
+            if method == 'POST':
                 # 2017-08-01 for https verify = False
                 ret = self.sess.post(self.url + cgi,
                                      data=payload,
                                      headers=header,
                                      timeout=timeout,
                                      verify=HTTPS_VERIFY)
-            elif payload is not False and method == 'GET':
+            elif method == 'GET':
                 # 2017-08-01 for https verify = False
                 ret = self.sess.get(self.url + cgi, headers=header, timeout=timeout, verify=HTTPS_VERIFY)
             else:
@@ -337,12 +338,12 @@ class PBoxWebAPI:
     @catch_exception
     def newchannel(self, items, freq=10000, name='default', flag=True):
         """ PBox new a channel.
-        @param items
-            ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '1000']
-            ['Modbus-TCP', '192.168.3.1', '54321', '1000']
-            ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
-            ['Panasert-TCP', '192.168.3.1', '54321', '1000']
-            ['Siap', '192.168.3.1', '54321', '10000']
+            @param items
+                ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '1000']
+                ['Modbus-TCP', '192.168.3.1', '54321', '1000']
+                ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
+                ['Panasert-TCP', '192.168.3.1', '54321', '1000']
+                ['Siap', '192.168.3.1', '54321', '10000']
         """
 
         self.__getsetupinfo()
@@ -366,12 +367,12 @@ class PBoxWebAPI:
     @catch_exception
     def alterchannel(self, items, freq=10000, name='default'):
         """ PBox alter a channel.
-        Items params:
-            ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '1000']
-            ['Modbus-TCP', '192.168.3.1', '54321', '1000']
-            ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
-            ['Panasert-TCP', '192.168.3.1', '54321', '1000']
-            ['Siap', '192.168.3.1', '54321', '10000']
+            @param items
+                ['Modbus-RTU', '/dev/ttymxc1', '9600', 'None', '8', '1', '1000']
+                ['Modbus-TCP', '192.168.3.1', '54321', '1000']
+                ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
+                ['Panasert-TCP', '192.168.3.1', '54321', '1000']
+                ['Siap', '192.168.3.1', '54321', '10000']
 
         History : 2017-08-30 V1.1 [Heyn] New deviceCFreq params for siap protocol
         """
@@ -405,7 +406,9 @@ class PBoxWebAPI:
 
     @catch_exception
     def alterdevice(self, name='default'):
-        """PBox Alter Device Name."""
+        """ PBox Alter Device Name.
+            @param name     Device name.
+        """
         params = OrderedDict(TokenNumber=self.__token)
         params['DeviceName'] = name
         params['ChannelID'] = self.jcid['id']
@@ -432,9 +435,8 @@ class PBoxWebAPI:
 
     @catch_exception
     def newitem(self, items):
-        """ PBox New Item
-            eg.
-            Modbus RTU : item=['python', 'test', '5000', 'a', '0', '1', '1;3;2;1;INT16;0;0;0']
+        """ PBox New Items
+            @param name     Modbus RTU : item=['python', 'test', '5000', 'a', '0', '1', '1;3;2;1;INT16;0;0;0']
         """
         params = [self.__token, self.jdid['id']]
         params.extend(items)
@@ -610,12 +612,13 @@ class PBoxWebAPI:
         return dataitems['detail']['items'] if SUCCESS_CODE in dataitems.get('result', ERROR_CODE) else []
 
     @catch_exception
-    def datetime(self):
+    def datetime(self, token=200):
         """ Get system date and time.
             @retvalue   time.struct_time(tm_year=2017, tm_mon=9, tm_mday=11, tm_hour=15, tm_min=22, tm_sec=37, tm_wday=0, tm_yday=254, tm_isdst=-1)
         """
-        params = OrderedDict(TokenNumber=self.__token)
+        params = OrderedDict(TokenNumber=self.__token if token == 200 else token)
         params['up'] = ''
+        print(params)
         ret = msg_register('POST', 'Timeget.cgi')(lambda x, y: y)(self, params)
         return strptime(ret['detail'].strip(), '|%Y|%m|%d|%H|%M|%S')
 
@@ -641,3 +644,7 @@ class PBoxWebAPI:
             return True
         logging.debug('WebMc Recovery.cgi = %s', str(ret))
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
+
+    def token(self):
+        """Get WebMc Token"""
+        return self.__token

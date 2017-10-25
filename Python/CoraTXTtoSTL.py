@@ -21,12 +21,22 @@ STL_HORIZONTAL = 0.0
 STL_VERTICAL = 1.0
 
 class CoraTXTtoSTL:
-    """"""
+    """
+        *.txt
+        1,0,-1,0,1,1,1,1,-1
+        2,1,0,2,0,2,-1,1,-1
+        3,2,-1,3,-1,3,-2,2,-2
+        4,3,-2,4,-2,4,-3,3,-3
+        5,0,-1,0,-2,-1,-2,-1,-1
+        6,-1,-2,-1,-3,-2,-3,-2,-2
+    """
 
-    def __init__(self):
+    def __init__(self, horizontal=STL_HORIZONTAL, vertical=STL_VERTICAL):
         self.zonedata = []
+        self.vertical = vertical
+        self.horizontal = horizontal
         self.zonerows = self.zonecolumns = 0
-        self._npzonedata = self._common_point = self._meshe = None
+        self._npzonedata = self._common_dot = self._meshe = None
 
     def load(self, filepath):
         """ Load *.txt to memory.
@@ -37,7 +47,7 @@ class CoraTXTtoSTL:
             for line in txt.readlines():
                 data = line.strip('\r\n').strip().split(',')
                 if len(data) == 9:
-                    data.extend([STL_HORIZONTAL, STL_VERTICAL])
+                    data.extend([self.horizontal, self.vertical])
                     self.zonedata.append(list(map(float, data)))
                 else:
                     logging.error('Zone data is error ' + line)
@@ -50,7 +60,7 @@ class CoraTXTtoSTL:
         """ Generate mesh object. """
         meshdata = np.zeros(8*self.zonerows, dtype=mesh.Mesh.dtype)
 
-        self._calc_common_point()
+        self._calc_common_dot()
 
         for row in range(0, self.zonerows):
             meshdata['vectors'][row*8 + 0] = npdata[row][np.array([[1, 2, 9], [3, 4, 9], [3, 4, 10]])]     #Back  Face V0
@@ -84,11 +94,19 @@ class CoraTXTtoSTL:
         else:
             self._meshe.save(savepath)
 
-    def _calc_common_point(self):
-        """"""
+    def _calc_common_dot(self):
+        """
+            @params self._common_dot [row col rowx colx x y] -> dot(x,y) in [row, col] and [rowx, colx]
+            ex.
+                row [[ 1.  0. -1.  0.  1.  1.  1.  (1. -1.)  0.  1.]
+                row  [ 2.  1.  0.  2.  0.  2. -1.  (1. -1.)  0.  1.]]
+
+                self._common_dot = [ 0.  3.  1.  3.  (1. -1.)]
+        """
         npdata = self._npzonedata.copy()
         print(npdata)
 
+        # Search common dot (x y)
         for row in range(0, self.zonerows-1):
             matrixrow = npdata[row, 1:9].reshape(4, 2)
             for col, item in enumerate(matrixrow):
@@ -96,23 +114,64 @@ class CoraTXTtoSTL:
                     matrixrowx = npdata[rowx, 1:9].reshape(4, 2)
                     for colx, itemx in enumerate(matrixrowx):
                         if np.array_equal(item, itemx):
-                            point = np.concatenate((np.array([row, col, rowx, colx], dtype='float64'), item))
-                            self._common_point = point.copy() if self._common_point is None else np.concatenate((self._common_point, point))
+                            npdot = np.concatenate((np.array([row, col, rowx, colx], dtype='float64'), item))
+                            self._common_dot = npdot.copy() if self._common_dot is None else np.concatenate((self._common_dot, npdot))
+        else:
+            self._common_dot = self._common_dot.reshape(self._common_dot.size//6, 6)
+        # Transform common dot(x, y)
+        self._transform()
 
+    def _calc_slope(self, p1, p2):
+        if p1[0] == p2[0]:
+            return False
+        
+        if abs((p1[1] - p2[1]) / (p1[0] - p2[0])) == 1:
+            return True
+        return False
 
-        # total = self._common_point.size
-        # self._common_point = self._common_point.reshape(total//6, 6)
-        # print(self._common_point)
-        # for _, item in enumerate(self._common_point):
-        #     x, y = item[4], item[5]
-        #     data1 = npdata[int(item[0]), 1:9].reshape(4, 2)
-        #     data2 = npdata[int(item[2]), 1:9].reshape(4, 2)
-        #     for m, n in zip(data1, data2):
-        #         if m[0] == x and m[1] != y:
-        #             self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = m[1]
-        #         if n[0] == x and n[1] != y:
-        #             self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = n[1]
+    def find_by_row(self, mat, row):
+        return np.where((mat == row).all(1))[0]
 
-TEST = CoraSTL()
+    def _transform(self):
+        """ Transform
+            -----           -----           -----
+            | 1 |           | 1 |  \        | 1 |  \
+            ---------   =>  -----   -   =>  -   -   -
+                | 2 |           | 2 |        \  | 2 |
+                -----           -----           -----
+              step0     =>    setp1     =>    step2
+        """
+
+        print(self._common_dot)
+        dotxy = self._common_dot[:, 4:6]
+        print(dotxy)
+        for _, item in enumerate(self._common_dot):
+            x, y = item[4], item[5]     # Common dot(x, y)
+            data1 = self._npzonedata[int(item[0]), 1:9].reshape(4, 2)
+            data2 = self._npzonedata[int(item[2]), 1:9].reshape(4, 2)
+
+            # Search move dot
+            mp1 = mp2 = kp1 = kp2 = np.array([x, y])
+
+            for m, n in zip(data1, data2):
+                #step1
+                if m[0] == x and m[1] != y and m[1] > y:
+                    mp1 = m
+                if m[0] != x and m[1] == y:
+                    kp1 = m
+                #step2
+                if n[0] == x and n[1] != y and n[1] < y:
+                    mp2 = n
+                if n[0] != x and n[1] == y:
+                    kp2 = n
+
+            # print(mp1, mp2, kp1, kp2)
+            if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1) is None:
+                self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
+            if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2) is None:
+                self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
+
+TEST = CoraTXTtoSTL()
 DATA = TEST.load('D:\\Python\\test.txt')
+# TEST.meshobject(DATA)
 TEST.plot(TEST.meshobject(DATA))

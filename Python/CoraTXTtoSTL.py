@@ -103,10 +103,10 @@ class CoraTXTtoSTL:
 
                 self._common_dot = [ 0.  3.  1.  3.  (1. -1.)]
         """
-        npdata = self._npzonedata.copy()
-        print(npdata)
 
-        # Search common dot (x y)
+        # """Search common dot (x y)"""
+        # """Method 1st"""
+        npdata = self._npzonedata.copy()
         for row in range(0, self.zonerows-1):
             matrixrow = npdata[row, 1:9].reshape(4, 2)
             for col, item in enumerate(matrixrow):
@@ -118,21 +118,37 @@ class CoraTXTtoSTL:
                             self._common_dot = npdot.copy() if self._common_dot is None else np.concatenate((self._common_dot, npdot))
         else:
             self._common_dot = self._common_dot.reshape(self._common_dot.size//6, 6)
-        # Transform common dot(x, y)
-        self._transform()
+        print(self._common_dot)
 
-    def _calc_slope(self, p1, p2):
-        if p1[0] == p2[0]:
+        # """Method 2nd (It's faster then 1st)"""
+
+        # npdata = self._npzonedata[:, 1:9].copy()
+        # npdata = npdata.reshape(npdata.size//2, 2)
+        # for index, item in enumerate(npdata):
+        #     result = np.where((npdata[index:, :] == item).all(1))[0]
+        #     if result.size >= 2:
+        #         x1, x2 = index + result[0], index + result[1]
+        #         npdot = np.concatenate((np.array([x1//4, x1%4, x2//4, x2%4], dtype='float64'), npdata[index:, :][result[0]]))
+        #         self._common_dot = npdot.copy() if self._common_dot is None else np.concatenate((self._common_dot, npdot))
+        # else:
+        #     self._common_dot = self._common_dot.reshape(self._common_dot.size//6, 6)
+        #     print(self._common_dot)
+
+        # Transform common dot(x, y)
+        self._smoothing()
+
+    def _calc_slope(self, kp, mp):
+        if kp[0] == mp[0]:
             return False
-        
-        if abs((p1[1] - p2[1]) / (p1[0] - p2[0])) == 1:
+        if abs((kp[1] - mp[1]) / (kp[0] - mp[0])) == 1:
             return True
+
         return False
 
     def find_by_row(self, mat, row):
-        return np.where((mat == row).all(1))[0]
+        return True if np.where((mat == row).all(1))[0].shape[0] == 0 else False
 
-    def _transform(self):
+    def _smoothing(self):
         """ Transform
             -----           -----           -----
             | 1 |           | 1 |  \        | 1 |  \
@@ -144,7 +160,7 @@ class CoraTXTtoSTL:
 
         print(self._common_dot)
         dotxy = self._common_dot[:, 4:6]
-        print(dotxy)
+
         for _, item in enumerate(self._common_dot):
             x, y = item[4], item[5]     # Common dot(x, y)
             data1 = self._npzonedata[int(item[0]), 1:9].reshape(4, 2)
@@ -165,13 +181,18 @@ class CoraTXTtoSTL:
                 if n[0] != x and n[1] == y:
                     kp2 = n
 
-            # print(mp1, mp2, kp1, kp2)
-            if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1) is None:
+            # print(x, y)
+            # ****** Condition ******
+            # kp1 : slope calcurate dot  mp1 : move to dot
+            # 1) kp1 and mp1 are slope must be 1
+            # 2) 
+            if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1):
                 self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
-            if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2) is None:
+            if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2):
                 self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
 
 TEST = CoraTXTtoSTL()
 DATA = TEST.load('D:\\Python\\test.txt')
 # TEST.meshobject(DATA)
 TEST.plot(TEST.meshobject(DATA))
+# TEST.save('D:\\Python\\test_zone.stl')

@@ -118,7 +118,7 @@ class CoraTXTtoSTL:
                             self._common_dot = npdot.copy() if self._common_dot is None else np.concatenate((self._common_dot, npdot))
         else:
             self._common_dot = self._common_dot.reshape(self._common_dot.size//6, 6)
-        print(self._common_dot)
+            print(self._common_dot)
 
         # """Method 2nd (It's faster then 1st)"""
 
@@ -138,12 +138,12 @@ class CoraTXTtoSTL:
         self._smoothing()
 
     def _calc_slope(self, kp, mp):
-        if kp[0] == mp[0]:
+        if kp[0] == mp[0] or kp[1] == mp[1]:
             return False
-        if abs((kp[1] - mp[1]) / (kp[0] - mp[0])) == 1:
-            return True
+        # if abs((kp[1] - mp[1]) / (kp[0] - mp[0])) == 1:
+        #     return True
 
-        return False
+        return True
 
     def find_by_row(self, mat, row):
         return True if np.where((mat == row).all(1))[0].shape[0] == 0 else False
@@ -158,7 +158,6 @@ class CoraTXTtoSTL:
               step0     =>    setp1     =>    step2
         """
 
-        print(self._common_dot)
         dotxy = self._common_dot[:, 4:6]
 
         for _, item in enumerate(self._common_dot):
@@ -184,15 +183,30 @@ class CoraTXTtoSTL:
             # print(x, y)
             # ****** Condition ******
             # kp1 : slope calcurate dot  mp1 : move to dot
-            # 1) kp1 and mp1 are slope must be 1
-            # 2) 
-            if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1):
-                self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
-            if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2):
+            # 1)
+            print(x, y, kp1, kp2, mp1, mp2)
+            if self._calc_slope(kp1, mp1) and self._calc_slope(kp2, mp2):
+                # if len(np.where((dotxy == kp1).all(1))[0]) == 0:
+                
                 self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
+                # if len(np.where((dotxy == kp2).all(1))[0]) == 0:
+                self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
+            # if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1):
+            #     self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
+            # if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2):
+            #     self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
 
 TEST = CoraTXTtoSTL()
-DATA = TEST.load('D:\\Python\\test.txt')
+DATA = TEST.load('C:\\03_Python\\test_zone.txt')
 # TEST.meshobject(DATA)
 TEST.plot(TEST.meshobject(DATA))
 # TEST.save('D:\\Python\\test_zone.stl')
+
+
+"""
+1,1.5,11.5,7.5,11.5,7.5,9.5,1.5,9.5 
+2,7.5,9.5,11.5,9.5,11.5,7.5,7.5,7.5 
+3,11.5,7.5,15.5,7.5,15.5,5.5,11.5,5.5 
+4,1.5,9.5,3.5,9.5,3.5,1.5,1.5,1.5 
+5,15.5,5.5,17.5,5.5,17.5,-0.5,15.5,-0.5 
+"""

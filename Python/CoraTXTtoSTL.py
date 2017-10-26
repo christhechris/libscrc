@@ -21,14 +21,7 @@ STL_HORIZONTAL = 0.0
 STL_VERTICAL = 1.0
 
 class CoraTXTtoSTL:
-    """
-        *.txt
-        1,0,-1,0,1,1,1,1,-1
-        2,1,0,2,0,2,-1,1,-1
-        3,2,-1,3,-1,3,-2,2,-2
-        4,3,-2,4,-2,4,-3,3,-3
-        5,0,-1,0,-2,-1,-2,-1,-1
-        6,-1,-2,-1,-3,-2,-3,-2,-2
+    """ TXT to STL.
     """
 
     def __init__(self, horizontal=STL_HORIZONTAL, vertical=STL_VERTICAL):
@@ -145,17 +138,70 @@ class CoraTXTtoSTL:
 
         return True
 
-    def find_by_row(self, mat, row):
-        return True if np.where((mat == row).all(1))[0].shape[0] == 0 else False
+    def _find_by_row(self, mat, row):
+        # return True if np.where((mat == row).all(1))[0].shape[0] == 0 else False
+        for item in mat:
+            if item[0] == row[0]  and item[1] == row[1]:
+                return True
+        return False
+
+    def _check_rules(self, kp1, kp2, mp1, mp2, dot):
+        """ Check Rules.
+        """
+        ret = [False, False]
+
+        # If common dot on line(kp1, kp2)
+        # """
+        #     -----  dot            ---------
+        #     | 1 | /               |   1   |
+        # kp1 +---*---+ kp2     dot *---+---+ kp1
+        #         | 2 |             | 2 | \
+        #         -----             -----  kp2
+        #
+        #       <OK>                   <ERROR>
+        # """
+        if not ((kp1[1] == kp2[1] == dot[1]) and (abs(kp1[0]) < abs(dot[0]) < abs(kp2[0]))):
+            print(kp1, kp2, mp1, mp2, dot)
+            return (False, ret)
+
+        if (kp1[0] == mp1[0]) or (kp1[1] == mp1[1]) or (kp2[0] == mp2[0]) or (kp2[1] == mp2[1]):
+            return (False, ret)
+
+        dotxy = self._common_dot[:, 4:6]
+        # """
+        #  (dot&kp1) ----- (dot&kp2)                  mp1 + ----- + mp1
+        #          \ | 1 | /                             /  | 1 |  \
+        #    kp1 +---*---*---+ kp2      ==PROCESS=>     +   *---*   +
+        #        | 2 |   | 3 |                          | 2 |   | 3 |
+        #        -----   -----                          -----   -----
+        # """
+        for item in dotxy:
+            if (item[0] == kp1[0]) and (item[1] == kp1[1]):
+                ret[0] = True
+            if (item[0] == kp2[0]) and (item[1] == kp2[1]):
+                ret[1] = True
+
+        return (True, ret)
+
 
     def _smoothing(self):
         """ Transform
+        -------------------------------------------------------------
             -----           -----           -----
             | 1 |           | 1 |  \        | 1 |  \
-            ---------   =>  -----   -   =>  -   -   -
+            ----*----   =>  -----   -   =>  -   -   -
                 | 2 |           | 2 |        \  | 2 |
                 -----           -----           -----
               step0     =>    setp1     =>    step2
+        -------------------------------------------------------------
+            -------------                       -----
+            |     1     |                       |   |
+            *---+--------                       |   |
+            |   |           => Do Nothing <=    | 1 |
+            | 2 |                               |   +--------
+            |   |                               |   |   2   |
+            -----                               ----*--------
+        -------------------------------------------------------------
         """
 
         dotxy = self._common_dot[:, 4:6]
@@ -165,7 +211,7 @@ class CoraTXTtoSTL:
             data1 = self._npzonedata[int(item[0]), 1:9].reshape(4, 2)
             data2 = self._npzonedata[int(item[2]), 1:9].reshape(4, 2)
 
-            # Search move dot
+            # Find move dot
             mp1 = mp2 = kp1 = kp2 = np.array([x, y])
 
             for m, n in zip(data1, data2):
@@ -180,24 +226,26 @@ class CoraTXTtoSTL:
                 if n[0] != x and n[1] == y:
                     kp2 = n
 
-            # print(x, y)
-            # ****** Condition ******
-            # kp1 : slope calcurate dot  mp1 : move to dot
-            # 1)
-            print(x, y, kp1, kp2, mp1, mp2)
-            if self._calc_slope(kp1, mp1) and self._calc_slope(kp2, mp2):
-                # if len(np.where((dotxy == kp1).all(1))[0]) == 0:
-                
-                self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
-                # if len(np.where((dotxy == kp2).all(1))[0]) == 0:
+            ret = self._check_rules(kp1, kp2, mp1, mp2, np.array([x, y]))
+
+            if ret[0] is False:
+                continue
+
+            # Processing kp1(kp2) and common points don't overlap
+            if ret[1][0] == True:
+                # Don't process mp2, bsc kp1 overlap common points
                 self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
-            # if self._calc_slope(kp1, mp1) and self.find_by_row(dotxy, mp1):
-            #     self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
-            # if self._calc_slope(kp2, mp2) and self.find_by_row(dotxy, mp2):
-            #     self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
+            elif ret[1][1] == True:
+                # Don't process mp1, bsc kp2 overlap common points
+                self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
+            else:
+                # Processing mp1 & mp2.
+                self._npzonedata[int(item[0]), 1 + int(item[1])*2 + 1] = mp2[1]
+                self._npzonedata[int(item[2]), 1 + int(item[3])*2 + 1] = mp1[1]
+
 
 TEST = CoraTXTtoSTL()
-DATA = TEST.load('C:\\03_Python\\test_zone.txt')
+DATA = TEST.load('D:\\Python\\test.txt')
 # TEST.meshobject(DATA)
 TEST.plot(TEST.meshobject(DATA))
 # TEST.save('D:\\Python\\test_zone.stl')
@@ -209,4 +257,13 @@ TEST.plot(TEST.meshobject(DATA))
 3,11.5,7.5,15.5,7.5,15.5,5.5,11.5,5.5 
 4,1.5,9.5,3.5,9.5,3.5,1.5,1.5,1.5 
 5,15.5,5.5,17.5,5.5,17.5,-0.5,15.5,-0.5 
+"""
+
+"""
+1,0,-1,0,1,1,1,1,-1
+2,1,0,2,0,2,-1,1,-1
+3,2,-1,3,-1,3,-2,2,-2
+4,3,-2,4,-2,4,-3,3,-3
+5,0,-1,0,-2,-1,-2,-1,-1
+6,-1,-2,-1,-3,-2,-3,-2,-2
 """

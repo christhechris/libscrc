@@ -1,4 +1,4 @@
-# -*- coding:utf8 -*-
+# -*- coding:utf-8 -*-
 """ PBox WebMc API """
 # !/usr/bin/python
 # Python:   3.5.2
@@ -11,6 +11,7 @@
 #           2017-08-25 Wheel Ver:0.1.1 [Heyn] New webpansert & websiap interface.
 #           2017-09-07 Wheel Ver:1.0.1 [Heyn] New __getdriverinfo() \ __getbasicinfo()
 #                                                 version() \ datetime()
+#           2017-11-13 Wheel Ver:1.1.3 [Heyn] New webpboxinfo()
 #
 
 from .PBoxWebAPI import PBoxWebAPI
@@ -24,7 +25,8 @@ __all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
            'webcloudaddress', 'webdownload', 'armreboot', 'webnewpassword',
            'weblanip', 'webwanip', 'webnet',
            'imageReport', 'webpansert', 'websiap', 'webconfpassword',
-           'webversion', 'webdatetime', 'webupdate', 'webrecovery']
+           'webversion', 'webdatetime', 'webupdate', 'webrecovery',
+           'webpboxinfo']
 
 instanceList = []
 
@@ -70,3 +72,5 @@ webdatetime     = originInstance.datetime
 
 webupdate       = originInstance.update
 webrecovery     = originInstance.recovery
+
+webpboxinfo     = originInstance.informations

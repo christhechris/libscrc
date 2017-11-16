@@ -33,6 +33,9 @@
 #                            New upate() \ recovery()
 #
 #           2017-09-13 Wheel Ver:1.1.1 [Heyn] BugFix003 Removed logging.basicConfig(xxxxxx) in __init__()
+#           2017-11-13 Wheel Ver:1.1.3 [Heyn] New informations()
+#           2017-11-14 Wheel Ver:1.2.0 [Heyn] Modify newchannel() params  & New save() & New load()
+#           2017-11-16 Wheel Ver:1.2.1 [Heyn] New wifi() & Modify wanipaddress() & Encrypt(Decrypt) Configure file.
 #
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -134,7 +137,6 @@ def print_pretty(title):
     return decorator
 
 
-
 BLOCK_SIZE = 16  # Bytes
 class AESCipher:
     # pylint: disable=C0301
@@ -200,7 +202,7 @@ class AESCipher:
         openssl_ciphertext = b'Salted__' + salt + cipher.encrypt(plaintext)
         return b64encode(openssl_ciphertext)
 
-    def __decrypt(self, ciphertext):
+    def decrypt(self, ciphertext):
         """ Decrypt ciphertext.
             #echo 'U2FsdGVkX1/6LeCeSdQh2qXEV76f48q2uWkNJdlt73vol+Eg9BUpfZ24yD8QymTv' | openssl aes-256-cbc -d -k password -base64
             This is plain text !
@@ -225,6 +227,7 @@ class PBoxWebAPI:
         requests.packages.urllib3.disable_warnings()    # 2017-08-01 for https verify = False
         self.sess = requests.session()
         self.__token = '200'
+        self.saveinfo = dict()
         self.username = self.password = self.passwordmd5 = 'admin'
         self.pboxinfo = self.driverinfo = self.basicinfo = None
         self.jcid = self.jdid = dict(id='0') # JSON Channel ID & JSON Device ID.
@@ -277,6 +280,32 @@ class PBoxWebAPI:
 
         logging.info('PBox Channel ID %s', self.jcid)
         logging.info('PBox Devices ID %s', self.jdid)
+        return True
+
+    @catch_exception
+    def __parseinfo(self):
+        """ Parse setupinfo & . """
+        if self.__getsetupinfo() is False:
+            return False
+
+        modeldict = self.pboxinfo.get('pboxsetup', {}).get('model', {})
+
+        if self.jcid['id'] != '0':
+            self.saveinfo.update(CHLName=modeldict.get('_name', None))
+            self.saveinfo.update(CHLFreq=modeldict.get('_freq', None))
+            self.saveinfo.update(CHLConf=modeldict.get('_config', None))
+
+        if self.jdid['id'] != '0':
+            self.saveinfo.update(DEVName=modeldict.get('device', {}).get('_name', ''))
+            itemslist = []
+            for item in modeldict.get('device', {}).get('commDataItems', [''])[0].get('dataItem', []):
+                itemslist.append([item['_name'], item['_alias'], item['_freq'], item['_type'], item['_rw'], item['_report'], item['_config']])
+            self.saveinfo.update(DataItems=itemslist)
+
+        if self.__getbasicinfo() is False:
+            return False
+
+        self.saveinfo.update(BaseInfo=self.basicinfo.get('Pbox', {}))
         return True
 
     @catch_exception
@@ -344,6 +373,10 @@ class PBoxWebAPI:
                 ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
                 ['Panasert-TCP', '192.168.3.1', '54321', '1000']
                 ['Siap', '192.168.3.1', '54321', '10000']
+            Wheel V1.2.0 later:
+                ['Modbus-RTU', '232', '9600', 'None', '8', '1', '1000']
+                ['Modbus-RTU', '485', '9600', 'None', '8', '1', '1000']
+                ['Modbus-RTU', '422', '9600', 'None', '8', '1', '1000']
         """
 
         self.__getsetupinfo()
@@ -555,16 +588,23 @@ class PBoxWebAPI:
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
     @catch_exception
-    def wanipaddress(self, dhcp='YES', ipaddr='192.168.3.77', netmask='255.255.255.0', gateway='192.168.3.1'):
-        """Change WAN IP Address."""
+    def wanipaddress(self, waninfo):
+        """ Change WAN IP Address.
+            @param waninfo = {  '_mask' = '255.255.255.0',
+                                '_dns': '192.168.0.1',
+                                '_dhcp': 'NO',
+                                '_ip': '192.168.0.1',
+                                '_gateway': '192.168.1.1'
+                             }
+        """
         params = OrderedDict(TokenNumber=self.__token)
         params['NetMode'] = 'gateway'
-        params['DHCPMode'] = dhcp.upper()
-        if dhcp.upper() == 'NO':
-            params['IPAddress'] = ipaddr
-            params['SubnetMask'] = netmask
-            params['Gateway'] = gateway
-            params['DNSAddress'] = '8.8.8.8'
+        params['DHCPMode'] = waninfo['_dhcp'].upper()
+        if params['DHCPMode'] == 'NO':
+            params['IPAddress'] = waninfo['_ip']
+            params['SubnetMask'] = waninfo['_mask']
+            params['Gateway'] = waninfo['_gateway']
+            params['DNSAddress'] = waninfo['_dns']
 
         ret = msg_register('POST', 'IPConfig.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -645,6 +685,77 @@ class PBoxWebAPI:
         logging.debug('WebMc Recovery.cgi = %s', str(ret))
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
-    def token(self):
-        """Get WebMc Token"""
-        return self.__token
+    @catch_exception
+    def informations(self):
+        """ Get PBox Basic Informations. """
+        params = dict()
+        params.update(Protocol=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('_config', 'None'))
+        return params
+
+    @catch_exception
+    def save(self, path):
+        """Save PBox configure file."""
+        if self.__parseinfo() is False:
+            return False
+
+        ciphertext = AESCipher('P@ssw0rd').encrypt(json.dumps(self.saveinfo))
+
+        with open(path, 'w') as fds:
+            fds.write(str(ciphertext, 'UTF-8'))
+        return True
+
+    @catch_exception
+    def load(self, path):
+        """Load PBox configure file."""
+        plaintext = "{}"
+        with open(path, 'r') as fds:
+            plaintext = AESCipher('P@ssw0rd').decrypt(fds.read())
+
+        loaddict = dict()
+        loaddict = json.loads(plaintext)
+
+        print(loaddict)
+        if len(loaddict) == 0:
+            return False
+
+        # New Channel
+        self.newchannel(loaddict['CHLConf'].split(';'), loaddict['CHLFreq'], loaddict['CHLName'])
+        # New Device
+        self.newdevice(loaddict['DEVName'])
+        # New Items
+        for item in loaddict['DataItems']:
+            self.newitem(item)
+
+        netinfo = loaddict.get('BaseInfo', {}).get('NetworkInfo', {})
+
+        self.cloudaddress(loaddict['BaseInfo']['CloudInfo']['Address'])
+        self.lanipaddress(netinfo.get('localip', '192.168.0.1'))
+        self.netswitch(netinfo.get('Mode', '4G'))
+        self.wanipaddress(netinfo['Gateway'])
+        self.wifi(loaddict['BaseInfo']['Wifi']['SSID'], 'WIFIPassWord', netinfo['Wifi'])
+        return True
+
+    @catch_exception
+    def wifi(self, ssid, wpwd, wifinfo):
+        """ Wi-Fi Setting.
+            @param wifinfo = {  '_mask' = '255.255.255.0',
+                                '_dns': '192.168.0.1',
+                                '_dhcp': 'NO',
+                                '_ip': '192.168.0.1',
+                                '_gateway': '192.168.1.1'
+                             }
+        """
+        params = OrderedDict(TokenNumber=self.__token)
+        params['SSID'] = ssid
+        params['WPWD'] = wpwd
+        params['NetMode'] = 'wifi'
+        params['DHCPMode'] = wifinfo['_dhcp'].upper()
+        params['SSIDHide'] = '1'
+        if params['DHCPMode'] == 'NO':
+            params['IPAddress'] = wifinfo['_ip']
+            params['SubnetMask'] = wifinfo['_mask']
+            params['Gateway'] = wifinfo['_gateway']
+            params['DNSAddress'] = wifinfo['_dns']
+
+        ret = msg_register('POST', 'Pboxwificonnect.cgi', 12)(lambda x, y: y)(self, params)
+        return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False

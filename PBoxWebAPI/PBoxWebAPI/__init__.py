@@ -12,7 +12,7 @@
 #           2017-09-07 Wheel Ver:1.0.1 [Heyn] New __getdriverinfo() \ __getbasicinfo()
 #                                                 version() \ datetime()
 #           2017-11-13 Wheel Ver:1.1.3 [Heyn] New webpboxinfo()
-#
+#           2017-11-17 Wheel Ver:1.2.2 [Heyn] New webwifi() websave() webload()
 
 from .PBoxWebAPI import PBoxWebAPI
 from .PBoxWebAPI import print_pretty
@@ -26,7 +26,7 @@ __all__ = ['weblogin', 'webnewchannel', 'webnewdevice', 'webnewitem',
            'weblanip', 'webwanip', 'webnet',
            'imageReport', 'webpansert', 'websiap', 'webconfpassword',
            'webversion', 'webdatetime', 'webupdate', 'webrecovery',
-           'webpboxinfo']
+           'webpboxinfo', 'webwifi', 'websave', 'webload']
 
 instanceList = []
 
@@ -74,3 +74,6 @@ webupdate       = originInstance.update
 webrecovery     = originInstance.recovery
 
 webpboxinfo     = originInstance.informations
+webwifi         = originInstance.wifi
+websave         = originInstance.save
+webload         = originInstance.load

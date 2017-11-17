@@ -50,7 +50,7 @@ import json
 import logging
 
 from uuid import getnode
-from uuid import UUID as key
+from uuid import UUID as aeskey
 
 from os import urandom
 from hashlib import md5
@@ -705,7 +705,7 @@ class PBoxWebAPI:
         if self.__parseinfo() is False:
             return False
 
-        ciphertext = AESCipher(key(int=getnode()).hex[-12: ]).encrypt(json.dumps(self.saveinfo))
+        ciphertext = AESCipher(aeskey(int=getnode()).hex[-12: ]).encrypt(json.dumps(self.saveinfo))
         with open(path, 'w') as fds:
             fds.write(str(ciphertext, 'UTF-8'))
         return True
@@ -721,7 +721,7 @@ class PBoxWebAPI:
         """Load PBox configure file."""
         plaintext = "{}"
         with open(path, 'r') as fds:
-            plaintext = AESCipher(key(int=getnode()).hex[-12: ]).decrypt(fds.read())
+            plaintext = AESCipher(aeskey(int=getnode()).hex[-12: ]).decrypt(fds.read())
 
         loaddict = dict()
         loaddict = json.loads(plaintext)
@@ -741,7 +741,7 @@ class PBoxWebAPI:
         self._runload('[*] Load WAN Setting ...', self.wanipaddress, netinfo['Gateway'])
         # TODO
         # Can't get wifi password from webmc
-        self._runload('[*] Load WiFi Setting ...', self.wifi, loaddict['BaseInfo']['Wifi']['SSID'], 'WIFIPassWord', netinfo['Wifi'])
+        self._runload('[*] Load WiFi Setting ...', self.wifiup, loaddict['BaseInfo']['Wifi']['SSID'], 'WIFIPassWord', netinfo['Wifi'])
 
         return True
 

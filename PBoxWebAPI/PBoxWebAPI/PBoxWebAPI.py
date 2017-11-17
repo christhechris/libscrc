@@ -36,6 +36,7 @@
 #           2017-11-13 Wheel Ver:1.1.3 [Heyn] New informations()
 #           2017-11-14 Wheel Ver:1.2.0 [Heyn] Modify newchannel() params  & New save() & New load()
 #           2017-11-16 Wheel Ver:1.2.1 [Heyn] New wifi() & Modify wanipaddress() & Encrypt(Decrypt) Configure file.
+#           2017-11-17 Wheel Ver:1.2.2 [Heyn] Optimization code.
 #
 
 # (1) Limit all lines to a maximum of 79 characters
@@ -46,6 +47,9 @@
 import re
 import json
 import logging
+
+from uuid import getnode
+from uuid import UUID as key
 
 from os import urandom
 from hashlib import md5
@@ -580,7 +584,7 @@ class PBoxWebAPI:
         return True
 
     @catch_exception
-    def lanipaddress(self, ipaddr='192.168.3.222'):
+    def lanipaddress(self, ipaddr='192.168.0.1'):
         """Change LAN IP Address."""
         params = OrderedDict(TokenNumber=self.__token)
         params['IPAddress'] = ipaddr
@@ -601,10 +605,8 @@ class PBoxWebAPI:
         params['NetMode'] = 'gateway'
         params['DHCPMode'] = waninfo['_dhcp'].upper()
         if params['DHCPMode'] == 'NO':
-            params['IPAddress'] = waninfo['_ip']
-            params['SubnetMask'] = waninfo['_mask']
-            params['Gateway'] = waninfo['_gateway']
-            params['DNSAddress'] = waninfo['_dns']
+            for item in ['_ip', '_mask', '_gateway', '_dns']:
+                params[item] = waninfo.get(item)
 
         ret = msg_register('POST', 'IPConfig.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
@@ -658,7 +660,6 @@ class PBoxWebAPI:
         """
         params = OrderedDict(TokenNumber=self.__token if token == 200 else token)
         params['up'] = ''
-        print(params)
         ret = msg_register('POST', 'Timeget.cgi')(lambda x, y: y)(self, params)
         return strptime(ret['detail'].strip(), '|%Y|%m|%d|%H|%M|%S')
 
@@ -690,6 +691,7 @@ class PBoxWebAPI:
         """ Get PBox Basic Informations. """
         params = dict()
         params.update(Protocol=self.pboxinfo.get('pboxsetup', {}).get('model', {}).get('_config', 'None'))
+        logging.info('PBox information %s', params)
         return params
 
     @catch_exception
@@ -698,46 +700,50 @@ class PBoxWebAPI:
         if self.__parseinfo() is False:
             return False
 
-        ciphertext = AESCipher('P@ssw0rd').encrypt(json.dumps(self.saveinfo))
-
+        ciphertext = AESCipher(key(int=getnode()).hex[-12: ]).encrypt(json.dumps(self.saveinfo))
         with open(path, 'w') as fds:
             fds.write(str(ciphertext, 'UTF-8'))
         return True
+
+    def _runload(self, strmsg, func, *args):
+        if func(*args):
+            logging.info(strmsg + ' Success ')
+        else:
+            logging.info(strmsg + ' Failure ')
 
     @catch_exception
     def load(self, path):
         """Load PBox configure file."""
         plaintext = "{}"
         with open(path, 'r') as fds:
-            plaintext = AESCipher('P@ssw0rd').decrypt(fds.read())
+            plaintext = AESCipher(key(int=getnode()).hex[-12: ]).decrypt(fds.read())
 
         loaddict = dict()
         loaddict = json.loads(plaintext)
 
-        print(loaddict)
         if len(loaddict) == 0:
             return False
 
-        # New Channel
-        self.newchannel(loaddict['CHLConf'].split(';'), loaddict['CHLFreq'], loaddict['CHLName'])
-        # New Device
-        self.newdevice(loaddict['DEVName'])
-        # New Items
+        self._runload('[*] Load Channel Name ...', self.newchannel, loaddict['CHLConf'].split(';'), loaddict['CHLFreq'], loaddict['CHLName'])
+        self._runload('[*] Load Device Name ...', self.newdevice, loaddict['DEVName'])
         for item in loaddict['DataItems']:
-            self.newitem(item)
+            self._runload('[*] Load Item Name ...' + str(item), self.newitem, item)
 
         netinfo = loaddict.get('BaseInfo', {}).get('NetworkInfo', {})
+        self._runload('[*] Load Cloud Address ...', self.cloudaddress, loaddict['BaseInfo']['CloudInfo']['Address'])
+        self._runload('[*] Load PBox Net Mode ...', self.netswitch, netinfo.get('Mode', '4G'))
+        self._runload('[*] Load LAN Setting ...', self.lanipaddress, netinfo.get('localip', '192.168.0.1'))
+        self._runload('[*] Load WAN Setting ...', self.wanipaddress, netinfo['Gateway'])
+        # TODO
+        # Can't get wifi password from webmc
+        self._runload('[*] Load WiFi Setting ...', self.wifi, loaddict['BaseInfo']['Wifi']['SSID'], 'WIFIPassWord', netinfo['Wifi'])
 
-        self.cloudaddress(loaddict['BaseInfo']['CloudInfo']['Address'])
-        self.lanipaddress(netinfo.get('localip', '192.168.0.1'))
-        self.netswitch(netinfo.get('Mode', '4G'))
-        self.wanipaddress(netinfo['Gateway'])
-        self.wifi(loaddict['BaseInfo']['Wifi']['SSID'], 'WIFIPassWord', netinfo['Wifi'])
         return True
 
     @catch_exception
     def wifi(self, ssid, wpwd, wifinfo):
         """ Wi-Fi Setting.
+            [TODO: Can't get wifi password from webmc]
             @param wifinfo = {  '_mask' = '255.255.255.0',
                                 '_dns': '192.168.0.1',
                                 '_dhcp': 'NO',
@@ -746,16 +752,9 @@ class PBoxWebAPI:
                              }
         """
         params = OrderedDict(TokenNumber=self.__token)
-        params['SSID'] = ssid
-        params['WPWD'] = wpwd
-        params['NetMode'] = 'wifi'
-        params['DHCPMode'] = wifinfo['_dhcp'].upper()
-        params['SSIDHide'] = '1'
+        params.update(zip(['SSID', 'WPWD', 'NetMode', 'DHCPMode', 'SSIDHide'], [ssid, wpwd, 'wifi', wifinfo['_dhcp'].upper(), '1']))
         if params['DHCPMode'] == 'NO':
-            params['IPAddress'] = wifinfo['_ip']
-            params['SubnetMask'] = wifinfo['_mask']
-            params['Gateway'] = wifinfo['_gateway']
-            params['DNSAddress'] = wifinfo['_dns']
-
+            for item in ['_ip', '_mask', '_gateway', '_dns']:
+                params[item] = wifinfo.get(item)
         ret = msg_register('POST', 'Pboxwificonnect.cgi', 12)(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False

@@ -381,6 +381,10 @@ class PBoxWebAPI:
                 ['Modbus-RTU', '232', '9600', 'None', '8', '1', '1000']
                 ['Modbus-RTU', '485', '9600', 'None', '8', '1', '1000']
                 ['Modbus-RTU', '422', '9600', 'None', '8', '1', '1000']
+
+            @param flag
+                flag = True  -> Delete channel
+                flag = False -> Don't delete channel
         """
 
         self.__getsetupinfo()

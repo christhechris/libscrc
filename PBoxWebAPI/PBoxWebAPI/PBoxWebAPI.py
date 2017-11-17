@@ -32,12 +32,13 @@
 #                            BugFix002 datetime() Process webmc return value |17|09|12|14|36|20
 #                            New upate() \ recovery()
 #
-#           2017-09-13 Wheel Ver:1.1.1 [Heyn] BugFix003 Removed logging.basicConfig(xxxxxx) in __init__()
+#           2017-09-13 Wheel Ver:1.1.1 [Heyn] BugFix003 Removed logging.basicConfig(level=logging.DEBUG) in __init__()
 #           2017-11-13 Wheel Ver:1.1.3 [Heyn] New informations()
 #           2017-11-14 Wheel Ver:1.2.0 [Heyn] Modify newchannel() params  & New save() & New load()
 #           2017-11-16 Wheel Ver:1.2.1 [Heyn] New wifi() & Modify wanipaddress() & Encrypt(Decrypt) Configure file.
 #           2017-11-17 Wheel Ver:1.2.2 [Heyn] Optimization code.
-#
+#                      Wheel Ver:1.2.3 [Heyn] Change webwifi to webwifiup & New webwifistatus & webwifidown
+
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -226,7 +227,7 @@ class PBoxWebAPI:
     # pylint: disable=C0301
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, url='https://192.168.3.111'):
+    def __init__(self, url='https://192.168.0.1'):
         self.url = url + '/cgi-bin/'
         requests.packages.urllib3.disable_warnings()    # 2017-08-01 for https verify = False
         self.sess = requests.session()
@@ -260,7 +261,7 @@ class PBoxWebAPI:
         return params
 
     @catch_exception
-    def login(self, url='http://192.168.3.111', username='admin', password='admin'):
+    def login(self, url='http://192.168.0.1', username='admin', password='admin'):
         """ WebMc Login
             @param url       url for device. ex: https://ipaddress or http://ipaddress
             @param username  The username to use as login.
@@ -745,7 +746,7 @@ class PBoxWebAPI:
         return True
 
     @catch_exception
-    def wifi(self, ssid, wpwd, wifinfo):
+    def wifiup(self, ssid, wpwd, wifinfo):
         """ Wi-Fi Setting.
             [TODO: Can't get wifi password from webmc]
             @param wifinfo = {  '_mask' = '255.255.255.0',
@@ -762,3 +763,19 @@ class PBoxWebAPI:
                 params[item] = wifinfo.get(item)
         ret = msg_register('POST', 'Pboxwificonnect.cgi', 12)(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
+
+    @catch_exception
+    def wifistatus(self):
+        """Get WiFi Status."""
+        params = OrderedDict(TokenNumber=self.__token)
+        ret = msg_register('POST', 'Pboxgetwifistatus.cgi')(lambda x, y: y)(self, params)
+        if SUCCESS_CODE not in ret.get('result', ERROR_CODE):
+            return False
+        logging.info(ret['detail']['wifiitems'])
+        return ret['detail']['wifiitems']
+
+    @msg_register('POST', 'Pboxwifidown.cgi')
+    def wifidown(self):
+        """ Disconnect WiFi. """
+        params = OrderedDict(TokenNumber=self.__token)
+        return params

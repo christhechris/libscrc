@@ -39,6 +39,7 @@ Installation
     export CROSS_COMPILE=arm-linux-gnueabihf-
     export CC='${CROSS_COMPILE}gcc -pthread'
     export LDSHARED='${CROSS_COMPILE}gcc -shared'
+    export CFLAGS='-I/usr/include/python3.5m -I/usr/include/'
     
     python3 setup.py build
     # gcc version 6.2.1 20161016 (Linaro GCC 6.2-2016.11)

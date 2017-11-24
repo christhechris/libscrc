@@ -44,6 +44,20 @@ Installation
 
   You will need the administrative privileges to execute the last command.
 
+* Cross compile and install the library::
+
+    # vim setup.cfg
+    universal=1
+    plat-name=linux_armv7l
+
+    export CROSS_COMPILE=arm-linux-gnueabihf-
+    export CC='${CROSS_COMPILE}gcc -pthread'
+    export LDSHARED='${CROSS_COMPILE}gcc -shared'
+    export CFLAGS='-I/usr/include/python3.5m -I/usr/include/'
+
+    python3 setup.py build
+    # gcc version 6.2.1 20161016 (Linaro GCC 6.2-2016.11)
+    
 * After installation you can run unit tests to make sure that the library works fine.  Execute::
 
     python -m libscrc.testmodbus

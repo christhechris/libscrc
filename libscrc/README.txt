@@ -30,6 +30,19 @@ Installation
     universal=1
     plat-name=manylinux1_x86_64
 
+    [Linux for ARMv7]
+
+    # vim setup.cfg
+    universal=1
+    plat-name=linux_armv7l
+
+    export CROSS_COMPILE=arm-linux-gnueabihf-
+    export CC='${CROSS_COMPILE}gcc -pthread'
+    export LDSHARED='${CROSS_COMPILE}gcc -shared'
+    
+    python3 setup.py build
+    # gcc version 6.2.1 20161016 (Linaro GCC 6.2-2016.11)
+
     [Upload]  
     #twine upload *.whl  
 

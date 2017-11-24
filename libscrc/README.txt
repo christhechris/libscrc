@@ -36,6 +36,7 @@ Installation
     universal=1
     plat-name=linux_armv7l
 
+    export PATH=/mnt/tools/gcc-linaro-6.2.1/bin/:$PATH
     export CROSS_COMPILE=arm-linux-gnueabihf-
     export CC='${CROSS_COMPILE}gcc -pthread'
     export LDSHARED='${CROSS_COMPILE}gcc -shared'

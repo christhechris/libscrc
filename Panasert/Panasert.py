@@ -72,7 +72,7 @@ class PboxTool(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event):
         """ PyQt Close Event. """
-        # self.panasertcp.disconnect()
+        self.panasertcp.disconnect()
         event.accept()
 
     def keyPressEvent(self, event):

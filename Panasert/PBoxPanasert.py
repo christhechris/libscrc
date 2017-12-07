@@ -19,7 +19,7 @@ import logging
 import binascii
 
 def catch_exception(origin_func):
-    """Catch exception."""
+    """ Catch exception. """
     def wrapper(self, *args, **kwargs):
         """Wrapper."""
         try:
@@ -32,53 +32,59 @@ def catch_exception(origin_func):
     return wrapper
 
 class PBoxPanasertTCP:
-    """PBox NM-EJR5A NM-EJR6A RL132"""
+    """ PBox NM-EJR5A NM-EJR6A RL132. """
 
     def __init__(self):
-        self.sock = None
+        self.__sock = None
         self.isopened = False
-        self.blocksize = 2048
+        self.__blocksize = 2048
 
     def __del__(self):
         if self.isopened is True:
-            self.sock.close()
-        self.isopened = False
+            self.isopened = False
+            self.__sock.close()
 
     @catch_exception
     def connect(self, addr='192.168.5.102', port=49152, block=True):
-        """ Open Socket & connect RL132 device. """
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setblocking(block)    # False = noBlocking True = Blocking
-        if block is False:
-            self.sock.settimeout(3)     # seconds
-
+        """ Open Socket & connect device. """
         logging.debug('IP=%s:%d Blocking=%d', addr, port, block)
-        self.sock.connect((addr, port))
+        self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__sock.setblocking(block)    # False = noBlocking True = Blocking
+        if block is False:
+            self.__sock.settimeout(3)     # seconds
+
+        self.__sock.connect((addr, port))
         return True
 
     def disconnect(self):
         """Close Sokcet"""
-        if self.isopened:
-            self.sock.close()
+        if self.isopened is True:
+            self.__sock.close()
+        self.isopened = False
 
     @catch_exception
-    def __send_packet__(self, cmd):
-        """ Socket (TCP) Send. """
-        # instruct(256Bytes) + datasize(4Bytes) + end(3Bytes)
+    def __send_packet(self, cmd='C1M000'):
+        """ Socket (TCP) Send.
+            # instruct(256Bytes) + datasize(4Bytes) + end(3Bytes)
+        """
+        if len(cmd) > 256:
+            logging.error('The command maximum length of more than 256.!!!')
+            return False
+
         instruct = cmd + ' ' * (256 - len(cmd)) + '\x00\x00\x00\x00' + '\x00'*3
-        self.sock.send(instruct.encode(encoding='UTF-8'))
+        self.__sock.send(instruct.encode(encoding='UTF-8'))
         logging.info('SND(string) -> ' + instruct)
-        logging.debug(binascii.b2a_hex(instruct.encode("UTF-8")))
+        logging.debug(binascii.b2a_hex(instruct.encode('UTF-8')))
 
         return True
 
     @catch_exception
-    def __recv_packet__(self):
-        """ Socket (TCP) Receive. """
-
+    def __recv_packet(self):
+        """ Socket (TCP) Receive.
+            instruct(256Bytes) + datasize(4Bytes) = 260(Bytes)
+        """
         msgdict = dict(cmds='', data='', lens=0)
-        # instruct(256Bytes) + datasize(4Bytes) = 260(Bytes)
-        instruct = self.sock.recv(260)
+        instruct = self.__sock.recv(260)
         logging.info('RCV(string) <- ' + str(instruct))
         if len(instruct) != 260:
             return msgdict
@@ -91,27 +97,38 @@ class PBoxPanasertTCP:
             msgdict['lens'] = struct.unpack('>L', bytes(instruct[256:260]))[0]
         except BaseException:
             msgdict['lens'] = 0
+            return msgdict
+
 
         logging.debug('Data Size = %d', msgdict['lens'])
 
         while True:
-            msgdict['data'] = msgdict['data'] + self.sock.recv(self.blocksize).decode('UTF-8')
+            msgdict['data'] = msgdict['data'] + self.__sock.recv(self.__blocksize).decode('UTF-8')
             if len(msgdict['data']) >= msgdict['lens']:
                 break
         logging.info('RCV(Data) <- ' + str(msgdict))
         return msgdict
 
-    def getdata(self, cmd):
+    def getdata(self, cmd='C1M000'):
         """ Get data from RL132. """
-        datalist = []
-        if self.__send_packet__(cmd) is False:
-            return datalist
+        msgdict = dict(cmds='', data='', lens=0)
 
-        datadict = self.__recv_packet__()
-        if isinstance(datadict, dict):
-            for item in datadict.get('data').splitlines():
-                if item[0:2] == '*':
-                    break
-                datalist.append(dict(itemName=item[0:2], value=item[2:]))
+        if self.__send_packet(cmd) is False:
+            return msgdict
 
-        return datalist
+        datadict = self.__recv_packet()
+
+        if isinstance(datadict, dict) is False:
+            return msgdict
+
+        msgdict.update(datadict)
+
+        if msgdict['cmds'] in ['A4E00', 'A4E01']:
+            msgdict['data'] = msgdict['data'] + 'Instruction ERROR!!'
+            return msgdict
+
+        if self.__send_packet('A0') is False:
+            return msgdict
+
+        self.__recv_packet()
+        return msgdict

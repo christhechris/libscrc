@@ -301,6 +301,12 @@
        <property name="locale">
         <locale language="English" country="UnitedStates"/>
        </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+       </property>
        <property name="autoScroll">
         <bool>true</bool>
        </property>
@@ -343,7 +349,7 @@
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>PBoxTool-Panasert(TCP) V1.0.2</string>
+        <string>PBoxTool-Panasert(TCP) V1.0.3</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>

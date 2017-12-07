@@ -19,12 +19,17 @@ import ipaddress
 from MainWindows import Ui_MainWindow
 from PBoxPanasert import PBoxPanasertTCP
 
-
 from PyQt5.uic import loadUiType
+from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QPixmap
+
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import pyqtSignal
+
+from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QMainWindow
@@ -41,7 +46,7 @@ class PboxTool(QMainWindow, Ui_MainWindow):
     """PBox tool class."""
     # pylint: disable=C0103
     # pylint: disable=C0301
-    signalwidgetupdate = pyqtSignal(list)
+    signalwidgetupdate = pyqtSignal(dict)
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -51,19 +56,13 @@ class PboxTool(QMainWindow, Ui_MainWindow):
         self._period = 0
 
         # # Property
-        self._combobox_property()
         self._line_edit_property()
-        self._table_widget_property()
         self._checkbox_property()
+        self._combobox_property()
+        self._pushbutton_property()
+        self._table_widget_property()
 
-        self.BtnConnect.clicked.connect(self.btn_connect)
-        self.BtnStart.clicked.connect(self.btn_start)
         self.signalwidgetupdate.connect(self.__slot_tablewidgetupdate)
-
-        # # # UI TableWidget
-        self.tableWidget.setHorizontalHeaderLabels(['Value'])
-        self.tableWidget.horizontalHeader().setStretchLastSection(True)  # Last column autosize
-        self.tableWidget.show()
 
         # # Init.
         self.panasertcp = PBoxPanasertTCP()
@@ -79,11 +78,19 @@ class PboxTool(QMainWindow, Ui_MainWindow):
         """ PyQt keyPress Event. """
         pass
 
+    def _pushbutton_property(self):
+        """ PushButton Property. """
+
+        self.BtnStart.clicked.connect(self.btn_start)
+        self.BtnConnect.clicked.connect(self.btn_connect)
+
     def _combobox_property(self):
         """ ComboBox Property. """
         # Commands init.
         self.comboBoxOrders.addItems(['C1M000', 'C1M000P', 'C1N000', 'C1Z000', 'C3'])
+        self.comboBoxOrders.setCurrentIndex(1)
         self.comboBoxOrders.currentIndexChanged.connect(self._slot_indexchange_order)
+        self._slot_indexchange_order()
         self._order = self.comboBoxOrders.currentText()
         # Period init.
         self.comboBoxPeriod.addItems(['0', '1', '5', '10', '30', '60', '120', '300'])
@@ -107,6 +114,12 @@ class PboxTool(QMainWindow, Ui_MainWindow):
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(1)
         self.tableWidget.setSortingEnabled(False)
+
+        # # UI TableWidget
+        self.tableWidget.setHorizontalHeaderLabels(['Value'])
+        self.tableWidget.horizontalHeader().setStretchLastSection(True)  # Last column autosize
+        self.tableWidget.show()
+
 
     def _checkbox_property(self):
         """ QCheckBox Property. """
@@ -190,6 +203,7 @@ class PboxTool(QMainWindow, Ui_MainWindow):
         """ Start Collect Data From Device. """
         self.btnstart_flag = not self.btnstart_flag
         self._order = self.comboBoxOrders.currentText() + self.lineEditProgName.text().strip()
+
         if self.btnstart_flag:
             threads = threading.Thread(target=self.worker)
             threads.start()
@@ -199,9 +213,7 @@ class PboxTool(QMainWindow, Ui_MainWindow):
     def worker(self):
         """ Thread worker. """
         while self.btnstart_flag and self.panasertcp.isopened:
-            msglist = self.panasertcp.getdata(self._order)
-            self.panasertcp.getdata('A0')
-            self.signalwidgetupdate.emit(msglist)
+            self.signalwidgetupdate.emit(self.panasertcp.getdata(self._order))
             time.sleep(self._period)
 
         if self.panasertcp.isopened is False:
@@ -209,19 +221,22 @@ class PboxTool(QMainWindow, Ui_MainWindow):
             self.btn_connect_status(False)
             self.btn_start_status(False)
 
-        print('Loop is over!')
 
-    def __slot_tablewidgetupdate(self, msglist):
+    def __slot_tablewidgetupdate(self, msgdict):
         """Show information to widgets"""
         self.tableWidget.setRowCount(0)
-        for index, item in enumerate(msglist):
-            # rowcnt = self.tableWidget.rowCount()
-            self.tableWidget.insertRow(index)
-            self.tableWidget.setItem(index, 0, QTableWidgetItem(item['itemName'] + item['value']))
+        logging.info(msgdict)
 
-        logging.info(msglist)
+        for index, item in enumerate(msgdict.get('data').splitlines()):
+            self.tableWidget.insertRow(index)
+            self.tableWidget.setItem(index, 0, QTableWidgetItem(item))
 
 APP = QApplication(sys.argv)
 DLG = PboxTool()
+
+ICON = QIcon()
+ICON.addPixmap(QPixmap("513.ico"), QIcon.Normal, QIcon.Off)
+DLG.setWindowIcon(ICON)
+
 DLG.show()
 sys.exit(APP.exec_())

@@ -11,7 +11,7 @@ NM-EJR5A NM-EJR6A RL132
 # History:  2017-03-03 V1.0.0 [Heyn]
 #           2017-03-30 V1.0.1 [Heyn]
 #           2017-12-04 V1.0.2 [Heyn] Optimized code.
-
+#           2017-12-08 V1.0.4 [Heyn] Optimized code. New memoryview type to __recv_packet()
 
 import socket
 import struct
@@ -47,11 +47,12 @@ class PBoxPanasertTCP:
     @catch_exception
     def connect(self, addr='192.168.5.102', port=49152, block=True):
         """ Open Socket & connect device. """
+
         logging.debug('IP=%s:%d Blocking=%d', addr, port, block)
         self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__sock.setblocking(block)    # False = noBlocking True = Blocking
         if block is False:
-            self.__sock.settimeout(3)     # seconds
+            self.__sock.settimeout(1)     # seconds
 
         self.__sock.connect((addr, port))
         return True
@@ -59,6 +60,7 @@ class PBoxPanasertTCP:
     def disconnect(self):
         """Close Sokcet"""
         if self.isopened is True:
+            self.__sock.shutdown(socket.SHUT_RDWR)
             self.__sock.close()
         self.isopened = False
 
@@ -84,28 +86,26 @@ class PBoxPanasertTCP:
             instruct(256Bytes) + datasize(4Bytes) = 260(Bytes)
         """
         msgdict = dict(cmds='', data='', lens=0)
-        instruct = self.__sock.recv(260)
-        logging.info('RCV(string) <- ' + str(instruct))
-        if len(instruct) != 260:
+        instruct = memoryview(bytearray(260))
+        if self.__sock.recv_into(instruct) != 260:
             return msgdict
 
-        msgdict['cmds'] = instruct[0:256].decode('UTF-8').strip(' ')
+        logging.info('RCV(string) <- ' + str(instruct.tobytes()))
+        msgdict['cmds'] = (instruct[0:256]).tobytes().decode('UTF-8').strip(' ')
         if msgdict['cmds'] not in ('D0', 'D1', 'A0', 'A2', 'A3', 'A4E00', 'A4E01'):
             return msgdict
 
-        try:
-            msgdict['lens'] = struct.unpack('>L', bytes(instruct[256:260]))[0]
-        except BaseException:
-            msgdict['lens'] = 0
-            return msgdict
-
-
+        msgdict['lens'] = struct.unpack('>L', bytes(instruct[256:260]))[0]
         logging.debug('Data Size = %d', msgdict['lens'])
 
+        mvdata = memoryview(bytearray(self.__blocksize))
         while True:
-            msgdict['data'] = msgdict['data'] + self.__sock.recv(self.__blocksize).decode('UTF-8')
-            if len(msgdict['data']) >= msgdict['lens']:
+            length = self.__sock.recv_into(mvdata, nbytes=self.__blocksize)
+            if length >= msgdict['lens']:
                 break
+
+        msgdict['data'] = mvdata.tobytes().decode('UTF-8')
+
         logging.info('RCV(Data) <- ' + str(msgdict))
         return msgdict
 

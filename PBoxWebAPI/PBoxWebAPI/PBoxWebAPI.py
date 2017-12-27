@@ -383,7 +383,8 @@ class PBoxWebAPI:
                 ['Modbus-RTU', '232', '9600', 'None', '8', '1', '1000']
                 ['Modbus-RTU', '485', '9600', 'None', '8', '1', '1000']
                 ['Modbus-RTU', '422', '9600', 'None', '8', '1', '1000']
-
+                ['Modbus-ASCII', '232', '9600', 'None', '8', '1', '1000']
+                ['Panasert-COM', '232', '4800', 'None', '7', '1', '1000', '0']
             @param flag
                 flag = True  -> Delete channel
                 flag = False -> Don't delete channel
@@ -416,6 +417,12 @@ class PBoxWebAPI:
                 ['Panasert-COM', '/dev/ttymxc1', '4800', 'None', '7', '1', '1000', '0']
                 ['Panasert-TCP', '192.168.3.1', '54321', '1000']
                 ['Siap', '192.168.3.1', '54321', '10000']
+            Wheel V1.2.0 later:
+                ['Modbus-RTU', '232', '9600', 'None', '8', '1', '1000']
+                ['Modbus-RTU', '485', '9600', 'None', '8', '1', '1000']
+                ['Modbus-RTU', '422', '9600', 'None', '8', '1', '1000']
+                ['Modbus-ASCII', '232', '9600', 'None', '8', '1', '1000']
+                ['Panasert-COM', '232', '4800', 'None', '7', '1', '1000', '0']
 
         History : 2017-08-30 V1.1 [Heyn] New deviceCFreq params for siap protocol
         """

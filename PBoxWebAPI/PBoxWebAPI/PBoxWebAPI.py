@@ -38,7 +38,8 @@
 #           2017-11-16 Wheel Ver:1.2.1 [Heyn] New wifi() & Modify wanipaddress() & Encrypt(Decrypt) Configure file.
 #           2017-11-17 Wheel Ver:1.2.2 [Heyn] Optimization code.
 #                      Wheel Ver:1.2.3 [Heyn] Change webwifi to webwifiup & New webwifistatus & webwifidown
-
+#           2017-12-27 Wheel Ver:1.2.4 [Heyn] download2app() New a parameter for delete database table.
+#
 
 # (1) Limit all lines to a maximum of 79 characters
 # (2) Private attrs use [__private_attrs]
@@ -91,7 +92,7 @@ def msg_register(method, cgi, timeout=5):
             """Wrapper."""
             payload = func(self, *args, **kwargs)
             header = {'Content-Type':'application/x-www-form-urlencoded',
-                      'User-Agent' : 'Mozilla/5.0 (iPad; CPU OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3'}
+                      'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'}
             if method == 'POST':
                 # 2017-08-01 for https verify = False
                 ret = self.sess.post(self.url + cgi,
@@ -539,10 +540,10 @@ class PBoxWebAPI:
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 
     @catch_exception
-    def download2app(self):
+    def download2app(self, deltable='1'):
         """Exe configuration."""
         params = OrderedDict(TokenNumber=self.__token)
-        params['LoadDataUp'] = '1'
+        params['LoadDataUp'] = deltable
         ret = msg_register('POST', 'LoadData.cgi')(lambda x, y: y)(self, params)
         return True if SUCCESS_CODE in ret.get('result', ERROR_CODE) else False
 

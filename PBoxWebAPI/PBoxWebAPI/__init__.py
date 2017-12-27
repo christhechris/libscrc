@@ -14,6 +14,7 @@
 #           2017-11-13 Wheel Ver:1.1.3 [Heyn] New webpboxinfo()
 #           2017-11-17 Wheel Ver:1.2.2 [Heyn] New webwifi() websave() webload()
 #                      Wheel Ver:1.2.3 [Heyn] Change webwifi to webwifiup & New webwifistatus & webwifidown
+#           2017-12-27 Wheel Ver:1.2.4 [Heyn] download2app() New a parameter for delete database table.
 #
 
 from .PBoxWebAPI import PBoxWebAPI

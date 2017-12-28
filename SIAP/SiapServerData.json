@@ -1,5 +1,5 @@
 {
-    "items":[
+    "items" : [
         { "itemName":"PC", "itemType":"INT32", "value":0 },
         { "itemName":"PYTHON00", "itemType":"BOOL", "value":1 },
         { "itemName":"PYTHON01", "itemType":"BYTE", "value":-128 },
@@ -12,5 +12,8 @@
         { "itemName":"PYTHON08", "itemType":"STRING40", "value":"Hello, this is string type." }
     ],
 
-    "random":0
+    "random" : 1,
+    "maxItems" : 50,
+    "randomType" : ["INT32", "STRING40"],
+    "randomName" : "PYTHON"
 }

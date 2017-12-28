@@ -10,6 +10,8 @@
 #           2017/12/22 V1.1.0 [Heyn] Optimization code.
 #           2017/12/26 V1.1.1 [Heyn] pyinstall --onefile PBoxSIAPs.py --icon **.ico
 #                                    ./PBoxSIAPs.exe -i 127.0.0.1
+#           2017/12/28 V1.1.2 [Heyn] Optimization code.
+
 
 # (1) Limit all lines to a maximum of 79 characters
 
@@ -23,6 +25,7 @@ import argparse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import pandas as pd
+from faker import Faker
 
 class SiapServer:
     """ SIAP Server. """
@@ -30,28 +33,48 @@ class SiapServer:
     def __init__(self):
         self.__random = 1
         self.__jsondata = {}
-        # self.alphabet = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0¡¢£¤¥¦§¨©ª«¬\xad®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþ'
+        self.__fake = Faker('en_US')
+        self.__randomtypes, self.__randomvalue = [], []
         self.__alphabet = string.ascii_letters + string.digits
         self.__itemtype = ['BOOL', 'BYTE', 'WORD', 'DWORD', 'DOUBLE',
                            'FLOAT', 'INT16', 'INT32', 'STRING40']
-
-        self.__randomdict = {'BOOL' : random.randrange(2),
-                             'BYTE' : random.randint(-128, 127),
-                             'WORD' : random.randint(0, 65535),
-                             'DWORD' : random.randint(0, 2**32-1),
-                             'INT16' : random.randint(-32768, 32767),
-                             'INT32' : random.randint(-2**31, 2**31-1),
-                             'FLOAT' : random.uniform(-2**128, 2**128),
-                             'DOUBLE' : random.uniform(-2**256, 2**256-1),
-                             'STRING40' : ''.join(random.choice(self.__alphabet) for i in range(random.randint(1, 40)))
+        self.__randomdict = {'BOOL' : lambda : random.randrange(2),
+                             'BYTE' : lambda : random.randint(-128, 127),
+                             'WORD' : lambda : random.randint(0, 65535),
+                             'DWORD' : lambda : random.randint(0, 2**32-1),
+                             'INT16' : lambda : random.randint(-32768, 32767),
+                             'INT32' : lambda : random.randint(-2**31, 2**31-1),
+                             'FLOAT' : lambda : self.__fake.pyfloat,
+                             'DOUBLE' : lambda : random.uniform(-2**256, 2**256-1),
+                            #  'STRING40' : lambda : self.__fake.binary(length=40).decode('UTF-8', 'ignore'),
+                             'STRING40' : lambda : self.__fake.pystr(min_chars=1, max_chars=40)
                             }
+        self.__titletypes = ['itemName', 'itemType']
+        self.__titlevalue = ['itemName', 'value']
+        try:
+            with open('SiapServerData.json') as ssd:
+                self.__jsondata = json.loads(ssd.read())
 
-        with open('SiapServerData.json') as ssd:
-            self.__jsondata = json.loads(ssd.read())
-
-        self.__value = pd.DataFrame(self.__jsondata['items'], columns=['itemName', 'value'])
-        self.__types = pd.DataFrame(self.__jsondata['items'], columns=['itemName', 'itemType'])
-        self.__random = self.__jsondata['random']
+            self.__random = self.__jsondata['random']
+            if self.__random == 0:
+                self.__value = pd.DataFrame(self.__jsondata['items'], columns=self.__titlevalue)
+                self.__types = pd.DataFrame(self.__jsondata['items'], columns=self.__titletypes)
+            else:
+                _typesize = len(self.__jsondata['randomType'])
+                for index in range(self.__jsondata['maxItems']):
+                    _itemname = 'PYTHON{0}'.format(index)
+                    self.__randomtypes.append(dict(itemName=_itemname,
+                                                   itemType=self.__jsondata['randomType'][index%_typesize]))
+                    self.__randomvalue.append(dict(itemName=_itemname, value=''))
+                self.__types = pd.DataFrame(self.__randomtypes, columns=self.__titletypes)
+                self.__value = pd.DataFrame(self.__randomvalue, columns=self.__titlevalue)
+        except BaseException as err:
+            self.__random = 1
+            self.__types = pd.DataFrame([dict(itemName='PYRANDOM00',
+                                              itemType='STRING40')], columns=self.__titletypes)
+            self.__value = pd.DataFrame([dict(itemName='PYRANDOM00',
+                                              value='JSON  ERROR')], columns=self.__titlevalue)
+            print(err)
 
     def __generate_items(self):
         """ Generate Items Types. """
@@ -67,7 +90,7 @@ class SiapServer:
         payload = dict(items=[])
         for i in range(self.__value.count()['itemName']):
             if self.__random != 0:
-                self.__value.iloc[i].value = self.__randomdict[self.__types.iloc[i].itemType]
+                self.__value.iloc[i].value = self.__randomdict[self.__types.iloc[i].itemType]()
             payload['items'].append(self.__value.iloc[i].to_dict())
         pprint.pprint(payload)
         return str(json.dumps(payload)).encode()
